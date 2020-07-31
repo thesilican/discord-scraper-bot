@@ -39,7 +39,7 @@ async function scrape(
         before: undefined,
       }));
   }
-  channels.sort((a, b) => a.channel.position - b.channel.position);
+  channels.sort((a, b) => a.channel.rawPosition - b.channel.rawPosition);
 
   msgText = `Scraping ${channels.length} channels: ${channels
     .map((c) => c.channel.name)

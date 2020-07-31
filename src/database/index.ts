@@ -21,23 +21,28 @@ export * from "./user";
 
 export const DatabaseFuncs = {
   async addMessage(msg: MessageInterface) {
-    let [message, user] = await Promise.all([
-      Message.findOne({ messageID: msg.messageID }),
-      User.findOne({ userID: msg.userID }),
-    ]);
-    if (message) return false;
-    message = new Message(msg);
-    if (user === null) {
-      user = new User({
-        userID: msg.userID,
-        wordCount: new Map(),
-      });
+    try {
+      let [message, user] = await Promise.all([
+        Message.findOne({ messageID: msg.messageID }),
+        User.findOne({ userID: msg.userID }),
+      ]);
+      if (message) return false;
+      message = new Message(msg);
+      if (user === null) {
+        user = new User({
+          userID: msg.userID,
+          wordCount: new Map(),
+        });
+      }
+      for (const word of msg.contentWords) {
+        const amount = (user.wordCount.get(word) ?? 0) + 1;
+        user.wordCount.set(word, amount);
+      }
+      await Promise.all([message.save(), user.save()]);
+      return true;
+    } catch (error) {
+      console.error(error);
+      return false;
     }
-    for (const word of msg.contentWords) {
-      const amount = (user.wordCount.get(word) ?? 0) + 1;
-      user.wordCount.set(word, amount);
-    }
-    await Promise.all([message.save(), user.save()]);
-    return true;
   },
 };
