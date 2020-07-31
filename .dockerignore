@@ -1,0 +1,8 @@
+**/.git/
+.clinic/
+.vscode/
+dist/
+node_modules/
+**/auth.json
+**/docker-compose.yml
+**/auth.env

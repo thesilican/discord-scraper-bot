@@ -1,0 +1,20 @@
+version: "3"
+services:
+  discord-scraper:
+    build: .
+    env_file:
+      - auth.env
+    networks:
+      - discord-network
+    restart: always
+  mongodb:
+    image: mongo
+    networks:
+      - discord-scraper
+    volumes:
+      - "discord-scraper:/data/db"
+    restart: always
+networks:
+  discord-scraper:
+volumes:
+  discord-scraper:
