@@ -6,6 +6,5 @@ COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
-RUN JOEMAMA
 
 CMD ["node", "dist/index.js"]
