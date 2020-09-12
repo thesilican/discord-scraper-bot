@@ -10,7 +10,6 @@ export default class LeaderboardCommand extends Command {
       aliases: ["lb"],
       group: "stats",
       description: "See who has said a particular word the most",
-      dmAllowed: false,
       arguments: [
         {
           name: "word",
@@ -18,6 +17,10 @@ export default class LeaderboardCommand extends Command {
           defaultValue: "bruh",
         },
       ],
+      rateLimit: {
+        seconds: 20,
+        max: 3,
+      },
     });
   }
   async run(msg: CommandMessage, args: string[], client: Client) {

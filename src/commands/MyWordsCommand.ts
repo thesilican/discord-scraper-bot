@@ -10,7 +10,6 @@ export default class MyWordsCommand extends Command {
       aliases: ["me"],
       group: "stats",
       description: "View a list of your top words",
-      dmAllowed: false,
       arguments: [
         {
           name: "user",
@@ -22,6 +21,10 @@ export default class MyWordsCommand extends Command {
           optional: true,
         },
       ],
+      rateLimit: {
+        seconds: 20,
+        max: 3,
+      },
     });
   }
   async run(msg: CommandMessage, args: string[], client: Client) {
