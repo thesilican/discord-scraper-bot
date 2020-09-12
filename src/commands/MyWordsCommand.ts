@@ -23,7 +23,7 @@ export default class MyWordsCommand extends Command {
       ],
       rateLimit: {
         seconds: 20,
-        max: 3,
+        max: 2,
       },
     });
   }

@@ -19,7 +19,7 @@ export default class LeaderboardCommand extends Command {
       ],
       rateLimit: {
         seconds: 20,
-        max: 3,
+        max: 2,
       },
     });
   }
