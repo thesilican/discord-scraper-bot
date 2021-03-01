@@ -1,8 +1,8 @@
-import { GuildMember } from "discord.js";
-import { DatabaseCommand } from "./databasecommand";
 import { Interaction } from "@thesilican/slash-commando";
-import { createPagination, createTable, TableHeader } from "../pagination";
+import { GuildMember } from "discord.js";
 import { Database } from "../database";
+import { createPagination, createTable, TableHeader } from "../pagination";
+import { DatabaseCommand } from "./databasecommand";
 
 const FREQUENCY = "frequency";
 const FREQUENCY_REVERSE = "frequency-reverse";

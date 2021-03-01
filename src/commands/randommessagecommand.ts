@@ -1,8 +1,8 @@
-import { GuildMember, MessageEmbed, TextChannel } from "discord.js";
 import { Interaction } from "@thesilican/slash-commando";
+import { GuildMember, MessageEmbed, TextChannel } from "discord.js";
 import { Database } from "../database";
-import { DatabaseCommand } from "./databasecommand";
 import { isTextChannel } from "../util";
+import { DatabaseCommand } from "./databasecommand";
 
 const template = `
 {contents}

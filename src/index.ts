@@ -1,6 +1,7 @@
 import { CommandClient } from "@thesilican/slash-commando";
 import { LeaderboardCommand } from "./commands/leaderboardcommand";
 import { MyStatsCommand } from "./commands/mystatscommand";
+import { PingCommand } from "./commands/pingcommand";
 import { RandomMessageCommand } from "./commands/randommessagecommand";
 import { ScrapeCommand } from "./commands/scrapecommand";
 import { Database } from "./database";
@@ -19,11 +20,8 @@ async function main() {
     new MyStatsCommand(database),
     new RandomMessageCommand(database),
     new ScrapeCommand(database),
+    new PingCommand(),
   ]);
-  // Commands to add:
-  // - /leaderboard <word> (word usage leaderboard)
-  // - /my-stats <user> (user word usage count)
-  // - /random <user> (find a random message from that user)
   client.start();
   client.on("message", (msg) => {
     database.addMessage(msg);

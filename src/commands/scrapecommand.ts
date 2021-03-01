@@ -1,5 +1,5 @@
 import { Interaction } from "@thesilican/slash-commando";
-import { Collection, GuildChannel, Message, TextChannel } from "discord.js";
+import { Collection, Message, TextChannel } from "discord.js";
 import { Database } from "../database";
 import env from "../env";
 import { isTextChannel } from "../util";
