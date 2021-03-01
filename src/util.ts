@@ -1,21 +1,12 @@
-const notAlphaNumericWhitespace = /[^a-z0-9\s]/g;
-const whitespace = /\s+/g;
+import { GuildChannel, TextChannel } from "discord.js";
 
-export const Util = {
-  findWords(content: string): string[] {
-    return content
-      .toLowerCase()
-      .replace(notAlphaNumericWhitespace, "")
-      .replace(whitespace, " ")
-      .trim()
-      .split(" ")
-      .filter((x) => x !== "");
-  },
-  padEnd(text: string, length: number, padding = " ") {
-    if (text.length > length) {
-      return text.slice(0, length - 1) + "…";
-    } else {
-      return text.padEnd(length, padding);
-    }
-  },
-};
+export function isTextChannel(channel: GuildChannel): channel is TextChannel {
+  return channel.type === "text";
+}
+
+export function normString(text: string): string {
+  return text
+    .normalize()
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, "");
+}

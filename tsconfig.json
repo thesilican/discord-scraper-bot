@@ -1,14 +1,13 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "lib": ["ES2017"],
+    "target": "es2017",
     "module": "commonjs",
-    "outDir": "./dist",
-    "sourceMap": true,
+    "outDir": "dist/",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*"]
+  "include": ["src/"]
 }

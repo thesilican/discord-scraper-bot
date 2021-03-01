@@ -3,18 +3,22 @@ services:
   discord-scraper:
     build: .
     env_file:
-      - auth.env
+      - .env
+    environment:
+      MONGODB_HOST: mongodb
     networks:
       - discord-network
     restart: always
   mongodb:
     image: mongo
+    logging:
+      driver: "none"
     networks:
-      - discord-scraper
+      - discord-network
     volumes:
       - "discord-scraper:/data/db"
     restart: always
 networks:
-  discord-scraper:
+  discord-network:
 volumes:
   discord-scraper:

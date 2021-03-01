@@ -1,6 +1,3 @@
-.clinic/
-!.vscode/
 dist/
 node_modules/
-**/auth.json
-auth.env
+.env
