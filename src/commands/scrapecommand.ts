@@ -10,7 +10,7 @@ export class ScrapeCommand extends DatabaseCommand {
     super({
       name: "scrape",
       description:
-        "Run a full scrape of the server, or of a particular channel",
+        "(OWNER ONLY!) Run a full scrape of the server, or of a particular channel",
       arguments: [
         {
           name: "channel",
