@@ -1,5 +1,13 @@
-import { Message } from "discord.js";
+import { Message, TextChannel } from "discord.js";
 import { normString } from "../util";
+import env from "../env";
+
+export type MessageSchema = {
+  _id: string;
+  content: string;
+  user: string;
+  channel: string;
+};
 
 export function extractWords(text: string) {
   const words = new Map<string, number>();
@@ -10,12 +18,28 @@ export function extractWords(text: string) {
   return words;
 }
 
-export function filterMessages(message: Message) {
+export function filterMessage(message: Message) {
   if (message.author.bot) {
     return false;
   }
   if (message.type !== "DEFAULT") {
     return false;
   }
-  return true;
+  if (!(message.channel instanceof TextChannel)) {
+    return false;
+  }
+  let everyone = message.channel.permissionOverwrites.get(
+    message.guild?.roles.everyone.id ?? ""
+  );
+  let filterRole = message.channel.permissionOverwrites.get(
+    env.discord.filterRole
+  );
+  // Either @everyone is NOT denied or filter role is allowed
+  if (
+    !everyone?.deny.has("VIEW_CHANNEL") ||
+    filterRole?.allow.has("VIEW_CHANNEL")
+  ) {
+    return true;
+  }
+  return false;
 }

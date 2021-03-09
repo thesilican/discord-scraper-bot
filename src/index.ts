@@ -4,6 +4,8 @@ import { MyStatsCommand } from "./commands/mystatscommand";
 import { PingCommand } from "./commands/pingcommand";
 import { RandomMessageCommand } from "./commands/randommessagecommand";
 import { ScrapeCommand } from "./commands/scrapecommand";
+import { TopCommand } from "./commands/topcommand";
+import { WordStatsCommand } from "./commands/wordstatscommand";
 import { Database } from "./database";
 import env from "./env";
 
@@ -14,17 +16,33 @@ async function main() {
     owner: env.discord.owner,
     guild: env.discord.guild,
     token: env.discord.token,
+    partials: ["MESSAGE", "CHANNEL"],
   });
   client.registry.registerCommands([
     new LeaderboardCommand(database),
+    new TopCommand(database),
     new MyStatsCommand(database),
+    new WordStatsCommand(database),
     new RandomMessageCommand(database),
     new ScrapeCommand(database),
     new PingCommand(),
   ]);
-  client.start();
+  await client.start();
   client.on("message", (msg) => {
     database.addMessage(msg);
+  });
+  client.on("channelDelete", (channel) => {
+    database.removeMessageByChannelID(channel.id);
+  });
+  client.on("messageDelete", (msg) => {
+    database.removeMessageByID(msg.id);
+  });
+  client.on("messageDeleteBulk", (msgs) => {
+    database.removeMessageByID(msgs.map((x) => x.id));
+  });
+  client.on("messageUpdate", async (msg) => {
+    msg = await msg.fetch();
+    await database.updateMessage(msg);
   });
 
   let exited = false;

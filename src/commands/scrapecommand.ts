@@ -18,6 +18,12 @@ export class ScrapeCommand extends DatabaseCommand {
           type: "channel",
           required: false,
         },
+        {
+          name: "keep-database",
+          description: "Whether or not to keep database records when scraping",
+          type: "boolean",
+          required: false,
+        },
       ],
       database,
     });
@@ -42,7 +48,9 @@ export class ScrapeCommand extends DatabaseCommand {
         .sort((a, b) => a.rawPosition - b.rawPosition);
     }
 
-    await this.database.clear();
+    if (!int.args[1]) {
+      await this.database.removeAll();
+    }
     try {
       await scrape(int, channels, this.database);
     } catch (err) {
@@ -81,7 +89,7 @@ async function scrape(
     let lastMessage = lastMessages.get(channel.id);
 
     let lastFetched = LIMIT;
-    let totalFetched = 1;
+    let totalFetched = lastMessage === undefined ? 0 : 1;
     let round = 0;
 
     while (lastMessage !== undefined && lastFetched === LIMIT) {

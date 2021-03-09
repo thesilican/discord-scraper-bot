@@ -1,100 +1,104 @@
 import { Message } from "discord.js";
-import { Collection, Db, MongoClient, MongoError } from "mongodb";
+import {
+  Collection,
+  Cursor,
+  Db,
+  FilterQuery,
+  MongoClient,
+  MongoError,
+} from "mongodb";
 import env from "../env";
-import { extractWords, filterMessages } from "./funcs";
+import { extractWords, filterMessage, MessageSchema } from "./funcs";
 
-type DatabaseOptions = {
+export type DatabaseOptions = {
   client: MongoClient;
   db: Db;
   messages: Collection;
-  users: Collection;
-};
-
-type MessageSchema = {
-  _id: string;
-  content: string;
-  user: string;
-  channel: string;
-};
-
-type UserSchema = {
-  _id: string;
-  words: { [word: string]: number };
 };
 
 export class Database {
   client: MongoClient;
   db: Db;
   messages: Collection;
-  users: Collection;
   constructor(options: DatabaseOptions) {
     this.client = options.client;
     this.db = options.db;
     this.messages = options.messages;
-    this.users = options.users;
   }
 
   async addMessage(messages: Message | Message[]) {
     if (!Array.isArray(messages)) {
       messages = [messages];
     }
-    messages = messages.filter(filterMessages);
+    messages = messages.filter(filterMessage);
     if (messages.length === 0) {
       return;
     }
 
-    const messageDocuments = messages.map((m) => ({
+    const messageDocs = messages.map((m) => ({
       _id: m.id,
       content: m.cleanContent,
       user: m.author.id,
       channel: m.channel.id,
     }));
     try {
-      await this.messages.insertMany(messageDocuments, { ordered: false });
+      await this.messages.insertMany(messageDocs, { ordered: false });
     } catch (err) {
       if (err instanceof MongoError && err.code === 11000) {
         // ignore duplicate key errors
       } else {
-        throw err;
+        console.error("Error writing message documents:", err);
       }
     }
-
-    const users = new Map<string, Map<string, number>>();
+  }
+  async updateMessage(messages: Message | Message[]) {
+    if (!Array.isArray(messages)) {
+      messages = [messages];
+    }
+    messages = messages.filter(filterMessage);
+    // Do them individually
     for (const message of messages) {
-      const words = extractWords(message.content);
-      if (words.size === 0) continue;
-
-      if (!users.has(message.author.id)) {
-        users.set(message.author.id, new Map());
-      }
-      const map = users.get(message.author.id)!;
-      for (const [word, count] of words) {
-        map.set(word, (map.get(word) ?? 0) + count);
-      }
-    }
-
-    for (const [userID, words] of users) {
-      const query = { _id: userID };
-      const update = { $inc: {} as any };
-      for (const [word, count] of words.entries()) {
-        update.$inc[`words.${word}`] = count;
-      }
-      await this.users.findOneAndUpdate(query, update, {
-        upsert: true,
-      });
+      await this.messages.findOneAndUpdate(
+        { _id: message.id },
+        { $set: { content: message.content } }
+      );
     }
   }
-
-  async getUserStats(userID: string): Promise<UserSchema | null> {
-    return (await this.users.findOne({
-      _id: userID,
-    })) as UserSchema | null;
+  async removeMessageByQuery(query: any) {
+    await this.messages.deleteMany(query);
   }
-  async getUserMessagesCount(userID: string): Promise<number> {
-    return await this.messages.countDocuments({ user: userID });
+  async removeMessageByID(id: string | string[]) {
+    if (!Array.isArray(id)) {
+      id = [id];
+    }
+    this.removeMessageByQuery({ _id: { $in: id } });
+  }
+  async removeMessageByChannelID(channelID: string | string[]) {
+    if (!Array.isArray(channelID)) {
+      channelID = [channelID];
+    }
+    this.removeMessageByQuery({ channel: { $in: channelID } });
+  }
+  async removeAll() {
+    await this.messages.deleteMany({});
+  }
+
+  getMessages() {
+    return this.messages.find({}) as Cursor<MessageSchema>;
+  }
+  async getUserWords(userID: string): Promise<Map<string, number>> {
+    const cursor: Cursor<MessageSchema> = this.messages.find({ user: userID });
+    const words = new Map<string, number>();
+    for await (const message of cursor) {
+      for (const [word, count] of extractWords(message.content)) {
+        const newCount = (words.get(word) ?? 0) + count;
+        words.set(word, newCount);
+      }
+    }
+    return words;
   }
   async getUserMessageRandom(userID: string, channelID?: string) {
-    let query: { [key: string]: string };
+    let query: FilterQuery<any>;
     if (channelID === undefined) {
       query = { user: userID };
     } else {
@@ -115,17 +119,58 @@ export class Database {
     }
     return null;
   }
-  async getUsersWord(word: string) {
-    const res = await this.users
+  async getWords() {
+    const cursor: Cursor<MessageSchema> = this.messages
       .find({})
-      .project({ [`words.${word}`]: 1 })
-      .toArray();
-    return res as UserSchema[];
+      .project({ content: 1 });
+    const words = new Map<string, number>();
+    for await (const message of cursor) {
+      for (const [word, count] of extractWords(message.content)) {
+        const newCount = (words.get(word) ?? 0) + count;
+        words.set(word, newCount);
+      }
+    }
+    return words;
   }
-
-  async clear() {
-    await this.users.deleteMany({});
-    await this.messages.deleteMany({});
+  async getWordsByChannel(channelID: string) {
+    const cursor: Cursor<MessageSchema> = this.messages
+      .find({
+        channel: channelID,
+      })
+      .project({ content: 1 });
+    const words = new Map<string, number>();
+    for await (const message of cursor) {
+      for (const [word, count] of extractWords(message.content)) {
+        const newCount = (words.get(word) ?? 0) + count;
+        words.set(word, newCount);
+      }
+    }
+    return words;
+  }
+  async getUsersByWord(word: string) {
+    const users = new Map<string, number>();
+    const cursor: Cursor<MessageSchema> = this.messages
+      .find({})
+      .project({ user: 1, content: 1 });
+    for await (const message of cursor) {
+      const user = message.user;
+      const words = extractWords(message.content);
+      const count = words.get(word)!;
+      if (count) {
+        const newCount = (users.get(user) ?? 0) + count;
+        users.set(user, newCount);
+      }
+    }
+    return users;
+  }
+  async getMessageCount() {
+    return await this.messages.countDocuments({});
+  }
+  async getMessageCountByChannel(channelID: string) {
+    return await this.messages.countDocuments({ channel: channelID });
+  }
+  async getMessageCountByUser(userID: string): Promise<number> {
+    return await this.messages.countDocuments({ user: userID });
   }
 
   async close() {
@@ -141,9 +186,9 @@ export class Database {
 
     const db = client.db(env.mongodb.database);
     const messages = db.collection("messages");
-    const users = db.collection("users");
     await messages.createIndex({ user: 1 });
+    await messages.createIndex({ channel: 1 });
 
-    return new Database({ client, db, users, messages });
+    return new Database({ client, db, messages });
   }
 }

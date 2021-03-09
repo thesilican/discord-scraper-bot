@@ -1,16 +1,15 @@
 import { Interaction } from "@thesilican/slash-commando";
-import { User } from "discord.js";
 import { Database } from "../database";
 import { createPagination, createTable, TableHeader } from "../pagination";
+import { isTextChannel } from "../util";
 import { DatabaseCommand } from "./databasecommand";
+import { TextChannel } from "discord.js";
 
-const FREQUENCY = "frequency";
-const FREQUENCY_REVERSE = "frequency-reverse";
 const ALPHABETICAL = "alphabetical";
-const ALPHABETICAL_REVERSE = "alphabetical-reverse";
+const FREQUENCY = "frequency";
 
 const template = `
-**🔠 | {name}'s word statistics**
+**🔠 | {server} word statistics**
 -----------------------------------------------
 Total words: \`{words}\` Total Messages: \`{messages}\`
 \`\`\`markdown
@@ -21,11 +20,11 @@ Page {p} of {t}
 \`\`\`
 `;
 
-export class MyStatsCommand extends DatabaseCommand {
+export class WordStatsCommand extends DatabaseCommand {
   constructor(database: Database) {
     super({
-      name: "mystats",
-      description: "Check your word usage stats",
+      name: "wordstats",
+      description: "Check the server word usage stats",
       arguments: [
         {
           name: "sort-by",
@@ -39,10 +38,10 @@ export class MyStatsCommand extends DatabaseCommand {
           ],
         },
         {
-          name: "user",
+          name: "channel",
           description:
-            "The user you would like to see word statistics about. Default is yourself",
-          type: "user",
+            "Checks messages from a specific channel only. If omitted, all channels will be searched",
+          type: "channel",
           required: false,
         },
       ],
@@ -51,49 +50,35 @@ export class MyStatsCommand extends DatabaseCommand {
   }
 
   async run(int: Interaction) {
-    let discordUser: User;
+    let query: Map<string, number>;
+    let totalMessages: number;
+    let channelName: string | null = null;
     if (int.args[1]) {
-      const res = int.client.users.resolve(int.args[1]);
-      if (res === null) {
-        return int.say("Unknown user");
+      let channel = int.guild.channels.resolve(int.args[1]);
+      if (!channel) {
+        return int.say("Unable to resolve channel: " + int.args[1]);
       }
-      discordUser = res;
+      if (!isTextChannel(channel)) {
+        return int.say("Channel " + channel.name + " is not a text channel");
+      }
+      channelName = channel.name;
+      query = await this.database.getWordsByChannel(int.args[1]);
+      totalMessages = await this.database.getMessageCountByChannel(int.args[1]);
     } else {
-      discordUser = int.member.user;
+      query = await this.database.getWords();
+      totalMessages = await this.database.getMessageCount();
     }
-
-    const user = await this.database.getUserWords(discordUser.id);
-    const totalMessages = await this.database.getMessageCountByUser(
-      discordUser.id
-    );
-    if (totalMessages === 0) {
-      if (discordUser.bot) {
-        return int.say(`Stats are not tracked for bots`);
-      } else {
-        return int.say(
-          `No words were found for that user (perhaps they haven't said anything yet?)`
-        );
-      }
-    }
-
     const words: [word: string, frequency: number][] = Array.from(
-      user.entries()
+      query.entries()
     );
+    const totalWords = words.reduce((a, v) => a + v[1], 0);
     if (int.args[0] === undefined || int.args[0] === FREQUENCY) {
       words.sort((a, b) => a[0].localeCompare(b[0]));
       words.sort((a, b) => b[1] - a[1]);
-    } else if (int.args[0] === FREQUENCY_REVERSE) {
-      words.sort((a, b) => a[0].localeCompare(b[0]));
-      words.sort((a, b) => a[1] - b[1]);
     } else if (int.args[0] === ALPHABETICAL) {
       words.sort((a, b) => a[0].localeCompare(b[0]));
-    } else if (int.args[0] === ALPHABETICAL_REVERSE) {
-      words.sort((a, b) => b[0].localeCompare(a[0]));
     }
-    const totalWords = words.reduce((a, v) => a + v[1], 0);
-
     const data = words.map((x) => [null, null, x[0], null, x[1]]);
-
     const header: TableHeader[] = [
       {
         type: "ranking",
@@ -118,6 +103,7 @@ export class MyStatsCommand extends DatabaseCommand {
         align: "left",
       },
     ];
+
     const pages = createTable({
       header,
       data,
@@ -125,12 +111,13 @@ export class MyStatsCommand extends DatabaseCommand {
     }).map((t, i, arr) =>
       template
         .replace("{table}", t)
-        .replace("{name}", discordUser.username)
+        .replace("{server}", channelName ? `#${channelName}` : int.guild.name)
         .replace("{words}", totalWords.toString())
         .replace("{messages}", totalMessages.toString())
         .replace("{p}", (i + 1).toString())
         .replace("{t}", arr.length.toString())
     );
+
     createPagination(await int.say("\u2800"), pages);
   }
 }

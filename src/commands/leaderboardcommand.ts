@@ -35,21 +35,14 @@ export class LeaderboardCommand extends DatabaseCommand {
 
   async run(int: Interaction) {
     const word = normString(int.args[0] ?? "bruh");
-    const query = await this.database.getUsersWord(word);
+    const query = await this.database.getUsersByWord(word);
 
-    const users: [user: string, count: number][] = [];
-    for (const user of query) {
-      if (user.words[word] !== undefined) {
-        let username: string;
-        try {
-          const member = await int.guild.members.fetch(user._id);
-          username = member.user.username;
-        } catch {
-          username = "Unknown User";
-        }
-        users.push([username, user.words[word]]);
-      }
-    }
+    const users: [user: string, count: number][] = Array.from(
+      query
+    ).map((x) => [
+      int.client.users.resolve(x[0])?.username ?? "Unknown User",
+      x[1],
+    ]);
     users.sort((a, b) => b[1] - a[1]);
     const totalWords = users.reduce((a, v) => a + v[1], 0);
 
@@ -98,6 +91,6 @@ export class LeaderboardCommand extends DatabaseCommand {
         .replace("{p}", (i + 1).toString())
         .replace("{t}", tablePages.length.toString())
     );
-    createPagination(await int.say("."), pages);
+    createPagination(await int.say("\u2800"), pages);
   }
 }

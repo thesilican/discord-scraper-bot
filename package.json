@@ -13,7 +13,7 @@
     "typescript": "^4.2.2"
   },
   "dependencies": {
-    "@thesilican/slash-commando": "^0.8.2",
+    "@thesilican/slash-commando": "^0.9.0",
     "@types/mongodb": "^3.6.8",
     "@types/node-fetch": "^2.5.8",
     "dotenv": "^8.2.0",

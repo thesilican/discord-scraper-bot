@@ -102,7 +102,7 @@ export function createTable(options: TableOptions) {
   return pages;
 }
 
-const PAGINATION_TIME = 24 * 60 * 60 * 1000;
+const PAGINATION_TIME = 7 * 24 * 60 * 60 * 1000;
 const MAX_CONCURRENT_PAGINATION = 10;
 const paginationQueue: (() => void)[] = [];
 
@@ -119,8 +119,10 @@ export async function createPagination(msg: Message, pages: string[]) {
   let pageNum = 0;
   const maxPage = pages.length - 1;
   await msg.edit(pages[0]);
-  for (const emoji of REACTION_MAP.keys()) {
-    await msg.react(emoji);
+  for (const [emoji, count] of REACTION_MAP) {
+    if (pages.length > Math.abs(count)) {
+      await msg.react(emoji);
+    }
   }
   const collector = msg.createReactionCollector(() => true, {
     time: PAGINATION_TIME,

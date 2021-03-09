@@ -10,6 +10,7 @@ const env = {
     owner: process.env.OWNER ?? missing(),
     guild: process.env.GUILD ?? missing(),
     token: process.env.TOKEN ?? missing(),
+    filterRole: process.env.FILTER_ROLE ?? missing(),
   },
   mongodb: {
     host: process.env.MONGODB_HOST ?? missing(),
