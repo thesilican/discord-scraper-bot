@@ -38,16 +38,11 @@ async function main() {
   client.on("messageDeleteBulk", (msgs) => {
     database.removeMessageByID(msgs.map((x) => x.id));
   });
-  client.on("messageUpdate", async (msg) => {
+  client.on("messageUpdate", async (_, msg) => {
     msg = await msg.fetch();
     await database.updateMessage(msg);
   });
-  client.on("channelUpdate", async (channel) => {
-    // Sleep 5 seconds before refetching channel
-    // (Discord permissions aren't properly sent for some reason)
-    await new Promise((res) => setTimeout(res, 5000));
-    await channel.fetch(true);
-    // Remove messages that loose visibility
+  client.on("channelUpdate", async (_, channel) => {
     if (!filterChannel(channel)) {
       database.removeMessageByChannelID(channel.id);
     }
