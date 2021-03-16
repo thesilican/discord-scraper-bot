@@ -116,14 +116,20 @@ const REACTION_MAP = new Map<string, number>([
 ]);
 
 export async function createPagination(msg: Message, pages: string[]) {
+  await msg.edit(pages[0]);
+  // No need to do pagination if only 1 length
+  if (pages.length <= 1) {
+    return;
+  }
+
   let pageNum = 0;
   const maxPage = pages.length - 1;
-  await msg.edit(pages[0]);
   for (const [emoji, count] of REACTION_MAP) {
     if (pages.length > Math.abs(count)) {
       await msg.react(emoji);
     }
   }
+
   const collector = msg.createReactionCollector(() => true, {
     time: PAGINATION_TIME,
   });
