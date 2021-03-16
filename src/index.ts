@@ -9,7 +9,6 @@ import { WordStatsCommand } from "./commands/wordstatscommand";
 import { Database } from "./database";
 import env from "./env";
 import { filterChannel } from "./util";
-import { TextChannel } from "discord.js";
 
 async function main() {
   const database = await Database.build();

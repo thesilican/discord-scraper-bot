@@ -2,7 +2,7 @@ import { Interaction } from "@thesilican/slash-commando";
 import { TextChannel } from "discord.js";
 import { Database } from "../database";
 import env from "../env";
-import { scrapeChannel } from "../util";
+import { filterChannel, scrapeChannel } from "../util";
 import { DatabaseCommand } from "./databasecommand";
 
 export class ScrapeCommand extends DatabaseCommand {
@@ -45,6 +45,7 @@ export class ScrapeCommand extends DatabaseCommand {
       channels = int.guild.channels.cache
         .array()
         .filter((x): x is TextChannel => x instanceof TextChannel)
+        .filter(filterChannel)
         .sort((a, b) => a.rawPosition - b.rawPosition);
     }
 
