@@ -9,6 +9,7 @@ import { WordStatsCommand } from "./commands/wordstatscommand";
 import { Database } from "./database";
 import env from "./env";
 import { filterChannel } from "./util";
+import { TextChannel } from "discord.js";
 
 async function main() {
   const database = await Database.build();
@@ -42,7 +43,11 @@ async function main() {
     msg = await msg.fetch();
     await database.updateMessage(msg);
   });
-  client.on("channelUpdate", (channel) => {
+  client.on("channelUpdate", async (channel) => {
+    // Sleep 5 seconds before refetching channel
+    // (Discord permissions aren't properly sent for some reason)
+    await new Promise((res) => setTimeout(res, 5000));
+    await channel.fetch(true);
     // Remove messages that loose visibility
     if (!filterChannel(channel)) {
       database.removeMessageByChannelID(channel.id);

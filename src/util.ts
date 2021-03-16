@@ -36,7 +36,7 @@ export function filterChannel(channel: Channel) {
   }
   let everyoneDenied =
     channel.permissionOverwrites
-      .get(channel.guild?.roles.everyone.id ?? "")
+      .get(channel.guild.roles.everyone.id ?? "")
       ?.deny.has("VIEW_CHANNEL") ?? false;
   let filterRoleAllowed =
     channel.permissionOverwrites
