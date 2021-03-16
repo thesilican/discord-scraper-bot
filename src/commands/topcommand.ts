@@ -76,13 +76,24 @@ export class TopCommand extends DatabaseCommand {
       }
     }
 
+    // Fetch usernames
+    const usernames = new Map<string, string>();
+    for (const [userID] of usersMap) {
+      const user = await int.client.users.fetch(userID);
+      if (!user) {
+        usernames.set(userID, "Unknown User");
+      } else {
+        usernames.set(userID, user.username);
+      }
+    }
+
     const users: [
       username: string,
       msgCount: number,
       wordCount: number,
       uniqueWordCount: number
     ][] = Array.from(usersMap).map((x) => [
-      int.client.users.resolve(x[0])?.username ?? "Unknown User",
+      usernames.get(x[0])!,
       x[1][0],
       x[1][1],
       x[1][2],

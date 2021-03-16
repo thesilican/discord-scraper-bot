@@ -76,23 +76,23 @@ export class MyStatsCommand extends DatabaseCommand {
       }
     }
 
-    const words: [word: string, frequency: number][] = Array.from(
-      user.entries()
+    const data = Array.from(user.entries()).map(
+      (x) =>
+        [null, null, x[0], null, x[1]] as [null, null, string, null, number]
     );
-    if (int.args[0] === undefined || int.args[0] === FREQUENCY) {
-      words.sort((a, b) => a[0].localeCompare(b[0]));
-      words.sort((a, b) => b[1] - a[1]);
-    } else if (int.args[0] === FREQUENCY_REVERSE) {
-      words.sort((a, b) => a[0].localeCompare(b[0]));
-      words.sort((a, b) => a[1] - b[1]);
-    } else if (int.args[0] === ALPHABETICAL) {
-      words.sort((a, b) => a[0].localeCompare(b[0]));
-    } else if (int.args[0] === ALPHABETICAL_REVERSE) {
-      words.sort((a, b) => b[0].localeCompare(a[0]));
-    }
-    const totalWords = words.reduce((a, v) => a + v[1], 0);
 
-    const data = words.map((x) => [null, null, x[0], null, x[1]]);
+    if (int.args[0] === undefined || int.args[0] === FREQUENCY) {
+      data.sort((a, b) => a[2].localeCompare(b[2]));
+      data.sort((a, b) => b[4] - a[4]);
+    } else if (int.args[0] === FREQUENCY_REVERSE) {
+      data.sort((a, b) => a[2].localeCompare(b[2]));
+      data.sort((a, b) => a[4] - b[4]);
+    } else if (int.args[0] === ALPHABETICAL) {
+      data.sort((a, b) => a[2].localeCompare(b[2]));
+    } else if (int.args[0] === ALPHABETICAL_REVERSE) {
+      data.sort((a, b) => b[2].localeCompare(a[2]));
+    }
+    const totalWords = data.reduce((a, v) => a + v[4], 0);
 
     const header: TableHeader[] = [
       {

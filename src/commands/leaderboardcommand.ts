@@ -37,20 +37,32 @@ export class LeaderboardCommand extends DatabaseCommand {
     const word = normString(int.args[0] ?? "bruh");
     const query = await this.database.getUsersByWord(word);
 
-    const users: [user: string, count: number][] = Array.from(
-      query
-    ).map((x) => [
-      int.client.users.resolve(x[0])?.username ?? "Unknown User",
-      x[1],
-    ]);
-    users.sort((a, b) => b[1] - a[1]);
-    const totalWords = users.reduce((a, v) => a + v[1], 0);
+    const usernames = new Map<string, string>();
+    for (const [userID] of query) {
+      const user = await int.client.users.fetch(userID);
+      if (!user) {
+        usernames.set(userID, "Unknown User");
+      } else {
+        usernames.set(userID, user.username);
+      }
+    }
 
-    if (users.length === 0) {
+    const data = Array.from(query).map(
+      (x) =>
+        [null, null, usernames.get(x[0]), null, x[1]] as [
+          null,
+          null,
+          string,
+          null,
+          number
+        ]
+    );
+    data.sort((a, b) => b[4] - a[4]);
+    const totalWords = data.reduce((a, v) => a + v[4], 0);
+    if (data.length === 0) {
       return int.say(`It appears that noone has ever said \`${word}\``);
     }
 
-    const data = users.map((x) => [null, null, x[0], null, x[1]]);
     const header: TableHeader[] = [
       {
         type: "ranking",

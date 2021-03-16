@@ -67,17 +67,18 @@ export class WordStatsCommand extends DatabaseCommand {
       query = await this.database.getWords();
       totalMessages = await this.database.getMessageCount();
     }
-    const words: [word: string, frequency: number][] = Array.from(
-      query.entries()
+    const data = Array.from(query.entries()).map(
+      (x) =>
+        [null, null, x[0], null, x[1]] as [null, null, string, null, number]
     );
-    const totalWords = words.reduce((a, v) => a + v[1], 0);
+    const totalWords = data.reduce((a, v) => a + v[4], 0);
     if (int.args[0] === undefined || int.args[0] === FREQUENCY) {
-      words.sort((a, b) => a[0].localeCompare(b[0]));
-      words.sort((a, b) => b[1] - a[1]);
+      data.sort((a, b) => a[2].localeCompare(b[2]));
+      data.sort((a, b) => b[4] - a[4]);
     } else if (int.args[0] === ALPHABETICAL) {
-      words.sort((a, b) => a[0].localeCompare(b[0]));
+      data.sort((a, b) => a[2].localeCompare(b[2]));
     }
-    const data = words.map((x) => [null, null, x[0], null, x[1]]);
+
     const header: TableHeader[] = [
       {
         type: "ranking",
