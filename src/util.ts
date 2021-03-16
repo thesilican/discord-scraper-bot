@@ -1,4 +1,4 @@
-import { Channel, Message, TextChannel } from "discord.js";
+import { Channel, Message, TextChannel, Collection } from "discord.js";
 import env from "./env";
 
 export function normString(text: string): string {
@@ -43,4 +43,20 @@ export function filterChannel(channel: Channel) {
       .get(env.discord.filterRole)
       ?.allow.has("VIEW_CHANNEL") ?? false;
   return !everyoneDenied || filterRoleAllowed;
+}
+
+export async function* scrapeChannel(channel: TextChannel, limit = 100) {
+  if (limit <= 0 || limit > 100) {
+    throw new Error("limit must be between 0-100");
+  }
+  let res: Collection<string, Message>;
+  let before: string | undefined;
+  do {
+    res = await channel.messages.fetch({ limit, before });
+    if (res.size === 0) {
+      break;
+    }
+    before = res.sort().first()?.id;
+    yield res;
+  } while (res.size === limit);
 }
