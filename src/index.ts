@@ -7,6 +7,7 @@ import { ScrapeCommand } from "./commands/scrapecommand";
 import { TopCommand } from "./commands/topcommand";
 import { WordStatsCommand } from "./commands/wordstatscommand";
 import { Database } from "./database";
+import { filterChannel } from "./database/funcs";
 import env from "./env";
 
 async function main() {
@@ -31,9 +32,6 @@ async function main() {
   client.on("message", (msg) => {
     database.addMessage(msg);
   });
-  client.on("channelDelete", (channel) => {
-    database.removeMessageByChannelID(channel.id);
-  });
   client.on("messageDelete", (msg) => {
     database.removeMessageByID(msg.id);
   });
@@ -43,6 +41,15 @@ async function main() {
   client.on("messageUpdate", async (msg) => {
     msg = await msg.fetch();
     await database.updateMessage(msg);
+  });
+  client.on("channelUpdate", (channel) => {
+    // Remove messages that loose visibility
+    if (!filterChannel(channel)) {
+      database.removeMessageByChannelID(channel.id);
+    }
+  });
+  client.on("channelDelete", (channel) => {
+    database.removeMessageByChannelID(channel.id);
   });
 
   let exited = false;

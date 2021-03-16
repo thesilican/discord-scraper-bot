@@ -64,20 +64,17 @@ export class Database {
       );
     }
   }
-  async removeMessageByQuery(query: any) {
-    await this.messages.deleteMany(query);
-  }
   async removeMessageByID(id: string | string[]) {
     if (!Array.isArray(id)) {
       id = [id];
     }
-    this.removeMessageByQuery({ _id: { $in: id } });
+    await this.messages.deleteMany({ _id: { $in: id } });
   }
   async removeMessageByChannelID(channelID: string | string[]) {
     if (!Array.isArray(channelID)) {
       channelID = [channelID];
     }
-    this.removeMessageByQuery({ channel: { $in: channelID } });
+    await this.messages.deleteMany({ channel: { $in: channelID } });
   }
   async removeAll() {
     await this.messages.deleteMany({});

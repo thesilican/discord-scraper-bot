@@ -1,4 +1,4 @@
-import { Message, TextChannel } from "discord.js";
+import { Message, TextChannel, Channel } from "discord.js";
 import { normString } from "../util";
 import env from "../env";
 
@@ -25,21 +25,23 @@ export function filterMessage(message: Message) {
   if (message.type !== "DEFAULT") {
     return false;
   }
-  if (!(message.channel instanceof TextChannel)) {
+  if (!filterChannel(message.channel)) {
     return false;
   }
-  let everyone = message.channel.permissionOverwrites.get(
-    message.guild?.roles.everyone.id ?? ""
-  );
-  let filterRole = message.channel.permissionOverwrites.get(
-    env.discord.filterRole
-  );
-  // Either @everyone is NOT denied or filter role is allowed
-  if (
-    !everyone?.deny.has("VIEW_CHANNEL") ||
-    filterRole?.allow.has("VIEW_CHANNEL")
-  ) {
-    return true;
+  return true;
+}
+
+export function filterChannel(channel: Channel) {
+  if (!(channel instanceof TextChannel)) {
+    return false;
   }
-  return false;
+  let everyoneDenied =
+    channel.permissionOverwrites
+      .get(channel.guild?.roles.everyone.id ?? "")
+      ?.deny.has("VIEW_CHANNEL") ?? false;
+  let filterRoleAllowed =
+    channel.permissionOverwrites
+      .get(env.discord.filterRole)
+      ?.allow.has("VIEW_CHANNEL") ?? false;
+  return !everyoneDenied || filterRoleAllowed;
 }
