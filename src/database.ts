@@ -7,8 +7,15 @@ import {
   MongoClient,
   MongoError,
 } from "mongodb";
-import env from "../env";
-import { extractWords, filterMessage, MessageSchema } from "./funcs";
+import env from "./env";
+import { extractWords, filterMessage } from "./util";
+
+export type MessageSchema = {
+  _id: string;
+  content: string;
+  user: string;
+  channel: string;
+};
 
 export type DatabaseOptions = {
   client: MongoClient;

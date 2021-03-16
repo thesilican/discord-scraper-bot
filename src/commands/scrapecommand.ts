@@ -2,7 +2,6 @@ import { Interaction } from "@thesilican/slash-commando";
 import { Collection, Message, TextChannel } from "discord.js";
 import { Database } from "../database";
 import env from "../env";
-import { isTextChannel } from "../util";
 import { DatabaseCommand } from "./databasecommand";
 
 export class ScrapeCommand extends DatabaseCommand {
@@ -37,14 +36,14 @@ export class ScrapeCommand extends DatabaseCommand {
     let channels: TextChannel[];
     if (int.args[0]) {
       const channel = int.guild.channels.resolve(int.args[0]);
-      if (!channel || !isTextChannel(channel)) {
+      if (!channel || !(channel instanceof TextChannel)) {
         return int.say("That is not a valid text channel");
       }
       channels = [channel];
     } else {
       channels = int.guild.channels.cache
         .array()
-        .filter(isTextChannel)
+        .filter((x): x is TextChannel => x instanceof TextChannel)
         .sort((a, b) => a.rawPosition - b.rawPosition);
     }
 

@@ -1,13 +1,12 @@
 import { Interaction } from "@thesilican/slash-commando";
 import { GuildMember, MessageEmbed, TextChannel } from "discord.js";
 import { Database } from "../database";
-import { isTextChannel } from "../util";
 import { DatabaseCommand } from "./databasecommand";
 
 const template = `
 {contents}
 - {author}, [{date}]({link})
-`.trim();
+`;
 
 export class RandomMessageCommand extends DatabaseCommand {
   constructor(database: Database) {
@@ -48,7 +47,7 @@ export class RandomMessageCommand extends DatabaseCommand {
     let queryChannel: TextChannel | undefined = undefined;
     if (int.args[1]) {
       const channel = int.guild.channels.resolve(int.args[1]);
-      if (channel !== null && isTextChannel(channel)) {
+      if (channel !== null && channel instanceof TextChannel) {
         queryChannel = channel;
       }
     }
@@ -66,7 +65,7 @@ export class RandomMessageCommand extends DatabaseCommand {
     }
 
     const channel = int.guild.channels.resolve(messageDoc.channel);
-    if (!channel || !isTextChannel(channel)) {
+    if (!channel || !(channel instanceof TextChannel)) {
       return int.say("Unable to resolve channel");
     }
     await channel.messages.fetch({ around: messageDoc._id });

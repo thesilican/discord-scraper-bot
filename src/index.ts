@@ -7,8 +7,8 @@ import { ScrapeCommand } from "./commands/scrapecommand";
 import { TopCommand } from "./commands/topcommand";
 import { WordStatsCommand } from "./commands/wordstatscommand";
 import { Database } from "./database";
-import { filterChannel } from "./database/funcs";
 import env from "./env";
+import { filterChannel } from "./util";
 
 async function main() {
   const database = await Database.build();

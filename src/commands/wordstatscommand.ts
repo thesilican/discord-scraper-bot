@@ -1,9 +1,8 @@
 import { Interaction } from "@thesilican/slash-commando";
+import { TextChannel } from "discord.js";
 import { Database } from "../database";
 import { createPagination, createTable, TableHeader } from "../pagination";
-import { isTextChannel } from "../util";
 import { DatabaseCommand } from "./databasecommand";
-import { TextChannel } from "discord.js";
 
 const ALPHABETICAL = "alphabetical";
 const FREQUENCY = "frequency";
@@ -58,7 +57,7 @@ export class WordStatsCommand extends DatabaseCommand {
       if (!channel) {
         return int.say("Unable to resolve channel: " + int.args[1]);
       }
-      if (!isTextChannel(channel)) {
+      if (!(channel instanceof TextChannel)) {
         return int.say("Channel " + channel.name + " is not a text channel");
       }
       channelName = channel.name;

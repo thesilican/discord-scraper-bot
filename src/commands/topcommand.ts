@@ -1,6 +1,6 @@
 import { Interaction } from "@thesilican/slash-commando";
 import { Database } from "../database";
-import { extractWords } from "../database/funcs";
+import { extractWords } from "../util";
 import { createPagination, createTable, TableHeader } from "../pagination";
 import { DatabaseCommand } from "./databasecommand";
 

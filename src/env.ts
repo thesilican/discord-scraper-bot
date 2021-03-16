@@ -1,20 +1,22 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-const missing = () => {
-  throw new Error("Missing env variable");
-};
+function getEnv(name: string) {
+  const val = process.env[name];
+  if (!val) throw new Error("Missing env variable: " + name);
+  return val;
+}
 
 const env = {
   discord: {
-    owner: process.env.OWNER ?? missing(),
-    guild: process.env.GUILD ?? missing(),
-    token: process.env.TOKEN ?? missing(),
-    filterRole: process.env.FILTER_ROLE ?? missing(),
+    owner: getEnv("OWNER"),
+    guild: getEnv("GUILD"),
+    token: getEnv("TOKEN"),
+    filterRole: getEnv("FILTER_ROLE"),
   },
   mongodb: {
-    host: process.env.MONGODB_HOST ?? missing(),
-    database: process.env.MONGODB_DATABASE ?? missing(),
+    host: getEnv("MONGODB_HOST"),
+    database: getEnv("MONGODB_DATABASE"),
   },
 };
 

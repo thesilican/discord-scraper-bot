@@ -14,7 +14,7 @@ RANK  NAME             COUNT
 
 Page {p} of {t}
 \`\`\`
-`.trim();
+`;
 
 export class LeaderboardCommand extends DatabaseCommand {
   constructor(database: Database) {
