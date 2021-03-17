@@ -1,8 +1,10 @@
 import { Interaction } from "@thesilican/slash-commando";
-import { Database } from "../database";
+import { createTable, TableHeader } from "../pagination";
 import { extractWords } from "../util";
-import { createPagination, createTable, TableHeader } from "../pagination";
-import { DatabaseCommand } from "./databasecommand";
+import {
+  ScraperBotCommand,
+  ScraperBotCommandOptions,
+} from "./scraperbotcommand";
 
 const NUM_MESSAGES = "num-messages";
 const NUM_WORDS = "num-words";
@@ -20,8 +22,8 @@ Page {p} of {t}
 \`\`\`
 `;
 
-export class TopCommand extends DatabaseCommand {
-  constructor(database: Database) {
+export class TopCommand extends ScraperBotCommand {
+  constructor(options: ScraperBotCommandOptions) {
     super({
       name: "top",
       description: "See who's sent the most messages",
@@ -44,7 +46,7 @@ export class TopCommand extends DatabaseCommand {
           required: false,
         },
       ],
-      database,
+      ...options,
     });
   }
 
@@ -174,6 +176,6 @@ export class TopCommand extends DatabaseCommand {
         .replace("{p}", (i + 1).toFixed(0))
         .replace("{t}", arr.length.toFixed(0))
     );
-    createPagination(await int.say("\u2800"), pages);
+    this.pagination.createPagination(await int.say("\u2800"), pages);
   }
 }

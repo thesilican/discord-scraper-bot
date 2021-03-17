@@ -3,10 +3,13 @@ import { TextChannel } from "discord.js";
 import { Database } from "../database";
 import env from "../env";
 import { filterChannel, scrapeChannel } from "../util";
-import { DatabaseCommand } from "./databasecommand";
+import {
+  ScraperBotCommand,
+  ScraperBotCommandOptions,
+} from "./scraperbotcommand";
 
-export class ScrapeCommand extends DatabaseCommand {
-  constructor(database: Database) {
+export class ScrapeCommand extends ScraperBotCommand {
+  constructor(options: ScraperBotCommandOptions) {
     super({
       name: "scrape",
       description:
@@ -25,7 +28,7 @@ export class ScrapeCommand extends DatabaseCommand {
           required: false,
         },
       ],
-      database,
+      ...options,
     });
   }
 

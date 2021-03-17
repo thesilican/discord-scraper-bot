@@ -1,4 +1,4 @@
-import { Channel, Message, TextChannel, Collection } from "discord.js";
+import { Channel, Collection, Message, TextChannel } from "discord.js";
 import env from "./env";
 
 export function normString(text: string): string {

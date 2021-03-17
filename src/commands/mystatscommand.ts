@@ -1,8 +1,10 @@
 import { Interaction } from "@thesilican/slash-commando";
 import { User } from "discord.js";
-import { Database } from "../database";
-import { createPagination, createTable, TableHeader } from "../pagination";
-import { DatabaseCommand } from "./databasecommand";
+import { createTable, TableHeader } from "../pagination";
+import {
+  ScraperBotCommand,
+  ScraperBotCommandOptions,
+} from "./scraperbotcommand";
 
 const FREQUENCY = "frequency";
 const FREQUENCY_REVERSE = "frequency-reverse";
@@ -21,8 +23,8 @@ Page {p} of {t}
 \`\`\`
 `;
 
-export class MyStatsCommand extends DatabaseCommand {
-  constructor(database: Database) {
+export class MyStatsCommand extends ScraperBotCommand {
+  constructor(options: ScraperBotCommandOptions) {
     super({
       name: "mystats",
       description: "Check your word usage stats",
@@ -46,7 +48,7 @@ export class MyStatsCommand extends DatabaseCommand {
           required: false,
         },
       ],
-      database,
+      ...options,
     });
   }
 
@@ -131,6 +133,6 @@ export class MyStatsCommand extends DatabaseCommand {
         .replace("{p}", (i + 1).toString())
         .replace("{t}", arr.length.toString())
     );
-    createPagination(await int.say("\u2800"), pages);
+    this.pagination.createPagination(await int.say("\u2800"), pages);
   }
 }

@@ -1,8 +1,10 @@
 import { Interaction } from "@thesilican/slash-commando";
-import { Database } from "../database";
-import { createPagination, createTable, TableHeader } from "../pagination";
+import { createTable, TableHeader } from "../pagination";
 import { normString } from "../util";
-import { DatabaseCommand } from "./databasecommand";
+import {
+  ScraperBotCommand,
+  ScraperBotCommandOptions,
+} from "./scraperbotcommand";
 
 const template = `
 **🏆 | Word leaderboard**
@@ -16,8 +18,8 @@ Page {p} of {t}
 \`\`\`
 `;
 
-export class LeaderboardCommand extends DatabaseCommand {
-  constructor(database: Database) {
+export class LeaderboardCommand extends ScraperBotCommand {
+  constructor(options: ScraperBotCommandOptions) {
     super({
       name: "leaderboard",
       description: "See who's said 'bruh' the most (or another word)",
@@ -29,7 +31,7 @@ export class LeaderboardCommand extends DatabaseCommand {
           required: false,
         },
       ],
-      database,
+      ...options,
     });
   }
 
@@ -103,6 +105,6 @@ export class LeaderboardCommand extends DatabaseCommand {
         .replace("{p}", (i + 1).toString())
         .replace("{t}", tablePages.length.toString())
     );
-    createPagination(await int.say("\u2800"), pages);
+    this.pagination.createPagination(await int.say("\u2800"), pages);
   }
 }

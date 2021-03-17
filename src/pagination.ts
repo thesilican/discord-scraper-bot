@@ -1,4 +1,10 @@
-import { Message, MessageReaction, User } from "discord.js";
+import {
+  Collection,
+  Message,
+  MessageReaction,
+  PartialUser,
+  User,
+} from "discord.js";
 
 export type TableHeader =
   | { type: "ranking"; column?: number; width: number }
@@ -102,11 +108,7 @@ export function createTable(options: TableOptions) {
   return pages;
 }
 
-const PAGINATION_TIME = 7 * 24 * 60 * 60 * 1000;
-const MAX_CONCURRENT_PAGINATION = 10;
-const paginationQueue: (() => void)[] = [];
-
-const REACTION_MAP = new Map<string, number>([
+const REACTION_TYPES = new Map<string, number>([
   ["⏮", -30],
   ["⏪", -5],
   ["◀", -1],
@@ -115,50 +117,69 @@ const REACTION_MAP = new Map<string, number>([
   ["⏭", 30],
 ]);
 
-export async function createPagination(msg: Message, pages: string[]) {
-  await msg.edit(pages[0]);
-  // No need to do pagination if only 1 length
-  if (pages.length <= 1) {
-    return;
-  }
+type PagenationInfo = {
+  pages: string[];
+  pageNum: number;
+};
 
-  let pageNum = 0;
-  const maxPage = pages.length - 1;
-  for (const [emoji, count] of REACTION_MAP) {
-    if (pages.length > Math.abs(count)) {
-      await msg.react(emoji);
+export type PaginationHandlerOptions = {
+  maxConcurrentPagination: number | undefined;
+};
+
+export class PaginationHandler {
+  maxConcurrentPagination: number;
+  pages: Collection<string, PagenationInfo>;
+  constructor(options?: PaginationHandlerOptions) {
+    this.maxConcurrentPagination = options?.maxConcurrentPagination ?? 10;
+    this.pages = new Collection();
+  }
+  async createPagination(msg: Message, pages: string[]) {
+    if (pages.length === 0) {
+      throw new Error("Expected at least 1 page");
+    }
+    await msg.edit(pages[0]);
+    // No need for pagination if only 1 length
+    if (pages.length === 1) {
+      return;
+    }
+
+    if (this.pages.size >= this.maxConcurrentPagination) {
+      const key = this.pages.firstKey();
+      if (key) {
+        this.pages.delete(key);
+      }
+    }
+    this.pages.set(msg.id, {
+      pages,
+      pageNum: 0,
+    });
+
+    for (const [emoji, count] of REACTION_TYPES) {
+      if (pages.length > Math.abs(count)) {
+        await msg.react(emoji);
+      }
     }
   }
-
-  const collector = msg.createReactionCollector(() => true, {
-    time: PAGINATION_TIME,
-  });
-  const onReaction = async (reaction: MessageReaction, user: User) => {
+  async handleReaction(reaction: MessageReaction, user: User | PartialUser) {
+    const info = this.pages.get(reaction.message.id);
+    if (!info) {
+      return;
+    }
+    user = await user.fetch();
+    if (user.bot) {
+      return;
+    }
+    const pageNum = info.pageNum;
+    const maxPage = info.pages.length - 1;
     const emoji = reaction.emoji.toString();
-    const amount = REACTION_MAP.get(emoji);
+    const amount = REACTION_TYPES.get(emoji);
     if (amount !== undefined) {
       let newPageNum = Math.min(Math.max(pageNum + amount, 0), maxPage);
       if (newPageNum !== pageNum) {
-        pageNum = newPageNum;
-        await msg.edit(pages[pageNum]);
+        info.pageNum = newPageNum;
+        await reaction.message.edit(info.pages[newPageNum]);
       }
     }
-    await reaction.users.remove(user);
-  };
-  const onEnd = () => {
-    collector.removeListener("collect", onReaction);
-    collector.removeListener("end", onEnd);
-    const index = paginationQueue.indexOf(onEnd);
-    if (index !== -1) {
-      paginationQueue.splice(index, 1);
-    }
-  };
-  collector.addListener("collect", onReaction);
-  collector.addListener("end", onEnd);
-
-  if (paginationQueue.length >= MAX_CONCURRENT_PAGINATION) {
-    const first = paginationQueue.splice(0, 1)[0];
-    first();
+    await reaction.users.remove(user.id);
   }
-  paginationQueue.push(onEnd);
 }

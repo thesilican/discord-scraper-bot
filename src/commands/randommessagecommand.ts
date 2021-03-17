@@ -1,15 +1,17 @@
 import { Interaction } from "@thesilican/slash-commando";
 import { GuildMember, MessageEmbed, TextChannel } from "discord.js";
-import { Database } from "../database";
-import { DatabaseCommand } from "./databasecommand";
+import {
+  ScraperBotCommand,
+  ScraperBotCommandOptions,
+} from "./scraperbotcommand";
 
 const template = `
 {contents}
 - {author}, [{date}]({link})
 `;
 
-export class RandomMessageCommand extends DatabaseCommand {
-  constructor(database: Database) {
+export class RandomMessageCommand extends ScraperBotCommand {
+  constructor(options: ScraperBotCommandOptions) {
     super({
       name: "random",
       description: "Find a random message that you've said before",
@@ -29,7 +31,7 @@ export class RandomMessageCommand extends DatabaseCommand {
           required: false,
         },
       ],
-      database,
+      ...options,
     });
   }
 

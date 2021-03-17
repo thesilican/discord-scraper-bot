@@ -8,24 +8,30 @@ import { TopCommand } from "./commands/topcommand";
 import { WordStatsCommand } from "./commands/wordstatscommand";
 import { Database } from "./database";
 import env from "./env";
+import { PaginationHandler } from "./pagination";
 import { filterChannel } from "./util";
 
 async function main() {
   const database = await Database.build();
+  const pagination = new PaginationHandler({ maxConcurrentPagination: 2 });
 
   const client = new CommandClient({
     owner: env.discord.owner,
     guild: env.discord.guild,
     token: env.discord.token,
-    partials: ["MESSAGE", "CHANNEL"],
+    partials: ["MESSAGE", "REACTION"],
   });
+  const commandOptions = {
+    database,
+    pagination,
+  };
   client.registry.registerCommands([
-    new LeaderboardCommand(database),
-    new TopCommand(database),
-    new MyStatsCommand(database),
-    new WordStatsCommand(database),
-    new RandomMessageCommand(database),
-    new ScrapeCommand(database),
+    new LeaderboardCommand(commandOptions),
+    new TopCommand(commandOptions),
+    new MyStatsCommand(commandOptions),
+    new WordStatsCommand(commandOptions),
+    new RandomMessageCommand(commandOptions),
+    new ScrapeCommand(commandOptions),
     new PingCommand(),
   ]);
   await client.start();
@@ -49,6 +55,9 @@ async function main() {
   });
   client.on("channelDelete", (channel) => {
     database.removeMessageByChannelID(channel.id);
+  });
+  client.on("messageReactionAdd", (reaction, user) => {
+    pagination.handleReaction(reaction, user);
   });
 
   let exited = false;
