@@ -92,6 +92,6 @@ export class RandomMessageCommand extends ScraperBotCommand {
         .replace("{link}", link)
         .replace("{date}", date)
     );
-    int.say(embed);
+    int.say("", embed);
   }
 }

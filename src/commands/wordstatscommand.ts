@@ -73,6 +73,9 @@ export class WordStatsCommand extends ScraperBotCommand {
       (x) =>
         [null, null, x[0], null, x[1]] as [null, null, string, null, number]
     );
+    if (data.length === 0) {
+      return int.say("No messages found");
+    }
     const totalWords = data.reduce((a, v) => a + v[4], 0);
     if (int.args[0] === undefined || int.args[0] === FREQUENCY) {
       data.sort((a, b) => a[2].localeCompare(b[2]));

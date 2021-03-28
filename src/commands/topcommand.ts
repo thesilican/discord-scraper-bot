@@ -77,6 +77,9 @@ export class TopCommand extends ScraperBotCommand {
         user[2]++;
       }
     }
+    if (totalMsgs === 0) {
+      return int.say("No messages found");
+    }
 
     // Fetch usernames
     const usernames = new Map<string, string>();
