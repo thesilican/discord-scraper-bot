@@ -9,6 +9,7 @@ import { WordStatsCommand } from "./commands/wordstatscommand";
 import { Database } from "./database";
 import env from "./env";
 import { PaginationHandler } from "./pagination";
+import { handleProxyReaction, proxyMessage } from "./proxy";
 import { filterChannel } from "./util";
 
 async function main() {
@@ -37,6 +38,9 @@ async function main() {
   await client.start();
   client.on("message", (msg) => {
     database.addMessage(msg);
+    if (env.discord.proxyMessages === "yes") {
+      proxyMessage(msg);
+    }
   });
   client.on("messageDelete", (msg) => {
     database.removeMessageByID(msg.id);
@@ -57,6 +61,9 @@ async function main() {
     database.removeMessageByChannelID(channel.id);
   });
   client.on("messageReactionAdd", (reaction, user) => {
+    // For privacy reasons, let messages be deleted
+    // Even when proxy is off
+    handleProxyReaction(reaction, user);
     pagination.handleReaction(reaction, user);
   });
 

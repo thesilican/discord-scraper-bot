@@ -19,6 +19,7 @@ const env = {
     guild: getEnv("GUILD"),
     token: getEnv("TOKEN"),
     filterRole: getDefaultEnv("FILTER_ROLE", ""),
+    proxyMessages: getDefaultEnv("PROXY_MESSAGES", "no"),
   },
   mongodb: {
     host: getEnv("MONGODB_HOST"),
