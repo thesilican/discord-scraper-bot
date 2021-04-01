@@ -24,6 +24,7 @@ export async function proxyMessage(message: Message) {
   const username = message.member!.displayName;
   const channel = message.channel;
   try {
+    await new Promise((res) => setTimeout(res, 250));
     await message.delete();
     await channel.send(`**<${username}>** ${content}`);
   } catch {}
