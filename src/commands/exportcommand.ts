@@ -38,6 +38,7 @@ export class ExportCommand extends ScraperBotCommand {
         words,
       });
     }
+    data.sort((a, b) => a.id.localeCompare(b.id));
 
     const buffer = Buffer.from(JSON.stringify({ data }));
     const deflated = await new Promise<Buffer>((res, rej) => {
