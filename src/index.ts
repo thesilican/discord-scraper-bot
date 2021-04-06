@@ -1,4 +1,5 @@
 import { CommandClient } from "@thesilican/slash-commando";
+import { ExportCommand } from "./commands/exportcommand";
 import { LeaderboardCommand } from "./commands/leaderboardcommand";
 import { MyStatsCommand } from "./commands/mystatscommand";
 import { PingCommand } from "./commands/pingcommand";
@@ -33,6 +34,7 @@ async function main() {
     new WordStatsCommand(commandOptions),
     new RandomMessageCommand(commandOptions),
     new ScrapeCommand(commandOptions),
+    new ExportCommand(commandOptions),
     new PingCommand(),
   ]);
   await client.start();
