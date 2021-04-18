@@ -101,12 +101,13 @@ export class Database {
     }
     return words;
   }
-  async getUserMessageRandom(userID: string, channelID?: string) {
-    let query: FilterQuery<any>;
-    if (channelID === undefined) {
-      query = { user: userID };
-    } else {
-      query = { user: userID, channel: channelID };
+  async getMessageRandom(userID?: string, channelID?: string) {
+    let query: FilterQuery<MessageSchema> = {};
+    if (userID !== undefined) {
+      query.user = userID;
+    }
+    if (channelID !== undefined) {
+      query.channel = channelID;
     }
 
     const count = await this.messages.countDocuments(query);

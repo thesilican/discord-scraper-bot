@@ -1,5 +1,5 @@
 import { Interaction } from "@thesilican/slash-commando";
-import { GuildMember, MessageEmbed, TextChannel } from "discord.js";
+import { MessageEmbed, TextChannel } from "discord.js";
 import {
   ScraperBotCommand,
   ScraperBotCommandOptions,
@@ -7,22 +7,15 @@ import {
 
 const template = `
 {contents}
-- {author}, [{date}]({link})
+- ||{author} [{date}]({link})||
 `;
 
-export class RandomMessageCommand extends ScraperBotCommand {
+export class GuessWhoCommand extends ScraperBotCommand {
   constructor(options: ScraperBotCommandOptions) {
     super({
-      name: "random",
-      description: "Find a random message that you've said before",
+      name: "guess-who",
+      description: "Like /random, but try to guess who said it",
       arguments: [
-        {
-          name: "user",
-          description:
-            "The user you would like to see word statistics about. Default is yourself",
-          type: "user",
-          required: false,
-        },
         {
           name: "channel",
           description:
@@ -36,16 +29,6 @@ export class RandomMessageCommand extends ScraperBotCommand {
   }
 
   async run(int: Interaction) {
-    let queryUser: GuildMember;
-    if (int.args[0]) {
-      const res = int.guild.members.resolve(int.args[0]);
-      if (res === null) {
-        return int.say("Unknown member");
-      }
-      queryUser = res;
-    } else {
-      queryUser = int.member;
-    }
     let queryChannel: TextChannel | undefined = undefined;
     if (int.args[1]) {
       const channel = int.guild.channels.resolve(int.args[1]);
@@ -54,16 +37,9 @@ export class RandomMessageCommand extends ScraperBotCommand {
       }
     }
 
-    const messageDoc = await this.database.getMessageRandom(
-      queryUser.id,
-      queryChannel?.id
-    );
+    const messageDoc = await this.database.getMessageRandom(queryChannel?.id);
     if (messageDoc === null) {
-      if (queryUser.user.bot) {
-        return int.say("Stats are not tracked for bots");
-      } else {
-        return int.say("Unable to find a message");
-      }
+      return int.say("Unable to find a message");
     }
 
     const channel = int.guild.channels.resolve(messageDoc.channel);
