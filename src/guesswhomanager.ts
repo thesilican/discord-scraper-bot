@@ -1,7 +1,8 @@
 import { Interaction } from "@thesilican/slash-commando";
-import { Message, TextChannel, MessageEmbed } from "discord.js";
+import { Message, MessageEmbed, TextChannel } from "discord.js";
+import { Cursor, FilterQuery } from "mongodb";
 import { Database, MessageSchema } from "./database";
-import { shuffle, sleep } from "./util";
+import { chunk, shuffle, sleep } from "./util";
 
 const guessEmbedTemplate = `
 {contents}
@@ -9,7 +10,7 @@ const guessEmbedTemplate = `
 `;
 const guessTextTemplate = `
 **Who said this?**
-1. \`{opt1}\` 2. \`{opt2}\` 3. \`{opt3}\` 4. \`{opt4}\`
+{options}
 `;
 const guessEmbedFooterTemplate = `
 Type 1, 2, 3, or 4 to guess
@@ -22,7 +23,7 @@ const answerEmbedTemplate = `
 {score}
 `;
 
-const NUM_OPTIONS = 4;
+const MAX_NUM_OPTIONS = 6;
 
 export class GuessWhoManager {
   inGame: boolean;
@@ -43,106 +44,141 @@ export class GuessWhoManager {
     this.guesses.clear();
 
     // Get a message
-    const messageMap = new Map<string, MessageSchema>();
-    let escape = 0;
-    while (messageMap.size < NUM_OPTIONS && escape < 100) {
-      const message = await database.getMessageRandom();
-      if (message) {
-        messageMap.set(message.user, message);
-      }
-      escape++;
-    }
-    if (escape === 100) {
-      this.inGame = false;
-      return await int.say("Something went wrong... Please try again");
-    }
-    const answer = Math.floor(Math.random() * NUM_OPTIONS);
-    const messages = Array.from(messageMap);
-    shuffle(messages);
+    const getUsername = (id: string) =>
+      int.guild.members.resolve(id)?.displayName ?? "unknown";
+    const [messages, answer] = await this.getRandomMessages(int, database);
 
-    // Fetch message, format contents
-    const correctMessageDoc = messages[answer][1];
-    try {
-      await int.guild.members.fetch(messages[answer][0]);
-    } catch {}
-    const correctUsername = int.guild.members.resolve(messages[answer][0])
-      ?.displayName;
-    const channel = int.guild.channels.resolve(correctMessageDoc.channel);
-    if (!channel || !(channel instanceof TextChannel)) {
-      this.inGame = false;
-      return int.say("Unable to resolve channel");
+    // Fetch info for correct message
+    const correctDoc = messages[answer];
+    const correctChannel = int.guild.channels.resolve(correctDoc.channel);
+    if (correctChannel === null || !(correctChannel instanceof TextChannel)) {
+      return await int.say("There was a problem: Error resolving channel");
     }
-    await channel.messages.fetch({ around: correctMessageDoc._id });
-    const message = channel.messages.resolve(correctMessageDoc._id);
-    if (!message) {
-      this.inGame = false;
-      return int.say("Unable to resolve message");
+    await correctChannel.messages.fetch({ around: correctDoc._id });
+    const correctMessage = correctChannel.messages.resolve(correctDoc._id);
+    if (correctMessage === null) {
+      return await int.say("There was a problem: Error resolving message");
     }
-    const date = message.createdAt.toDateString();
-    const link = `https://discord.com/channels/${int.guild.id}/${channel.id}/${message.id}`;
-    const contents =
-      "> \n" +
-      message.cleanContent
-        .split("\n")
-        .map((x) => `> ${x}`)
-        .join("\n") +
-      "\n> ";
+    const correctName = correctMessage.member!.displayName;
+    const correctDate = correctMessage.createdAt.toDateString();
+    const correctLink = `https://discord.com/channels/${int.guild.id}/${correctChannel.id}/${correctMessage.id}`;
 
-    let embed1Text = guessEmbedTemplate.replace("{contents}", contents);
-    let msg1Text = guessTextTemplate;
-    for (let i = 0; i < NUM_OPTIONS; i++) {
-      try {
-        await int.guild.members.fetch(messages[i][0]);
-      } catch {}
-      const username = int.guild.members.resolve(messages[i][0])?.displayName;
-      msg1Text = msg1Text.replace(`{opt${i + 1}}`, `${username}`);
-    }
-    // First embed message
-    const embed1 = new MessageEmbed()
-      .setDescription(embed1Text)
+    // Send first message
+    const questionEmbed = new MessageEmbed()
+      .setDescription(
+        guessEmbedTemplate.replace(
+          "{contents}",
+          "> \n" +
+            correctMessage.cleanContent
+              .split("\n")
+              .map((x) => `> ${x}`)
+              .join("\n") +
+            "\n> "
+        )
+      )
       .setFooter(guessEmbedFooterTemplate);
-    const msg1 = await int.say(msg1Text, embed1);
+    const questionText = guessTextTemplate.replace(
+      "{options}",
+      chunk(3, messages)
+        .map((chunk, i) =>
+          chunk
+            .map((x, j) => `${i * 3 + j + 1}. \`${getUsername(x.user)}\``)
+            .join(" ")
+        )
+        .join("\n")
+    );
+    const questionMsg = await int.say(questionText, questionEmbed);
 
     await sleep(12000);
 
-    // Second message (answer)
+    // Calculate score text
     this.inGame = false;
-    let score = [];
+    const scoreTextArr = [];
     for (const [id, guess] of this.guesses) {
-      const name = int.guild.members.resolve(id)?.displayName;
+      const name = getUsername(id);
       const res = await database.getGuessWhoLeaderboard(id);
       const isCorrect = guess === answer + 1;
-      const correctAmount = (res?.correct ?? 0) + (isCorrect ? 1 : 0);
-      const totalAmount = (res?.total ?? 0) + 1;
-      const col =
-        `⠀${name} ${isCorrect ? "✅" : "❌"}` +
-        ` (${correctAmount}/${totalAmount})`;
-      score.push(col);
-      await database.updateGuessWhoLeaderboard(id, correctAmount, totalAmount);
+      const emoji = isCorrect ? "✅" : "❌";
+      const correctCount = (res?.correct ?? 0) + (isCorrect ? 1 : 0);
+      const totalCount = (res?.total ?? 0) + 1;
+      scoreTextArr.push(`- ${name} ${emoji} (${correctCount}/${totalCount})`);
+      await database.updateGuessWhoLeaderboard(id, correctCount, totalCount);
     }
     this.guesses.clear();
-    let embed2Text = answerEmbedTemplate
-      .replace("{name}", `${correctUsername}`)
-      .replace("{date}", date)
-      .replace("{link}", link)
-      .replace("{score}", score.join("\n"));
+
+    // Send final message
+    let answerEmbedText = answerEmbedTemplate
+      .replace("{name}", correctName)
+      .replace("{date}", correctDate)
+      .replace("{link}", correctLink)
+      .replace("{score}", scoreTextArr.join("\n"));
     try {
       // @ts-ignore
-      const res = await int.client.api.channels[msg1.channel.id].messages.post({
+      await int.client.api.channels[questionMsg.channel.id].messages.post({
         data: {
           content: "",
           embed: {
-            description: embed2Text,
+            description: answerEmbedText,
           },
           message_reference: {
-            message_id: msg1.id,
-            channel_id: msg1.channel.id,
-            guild_id: msg1.guild!.id,
+            message_id: questionMsg.id,
+            channel_id: questionMsg.channel.id,
+            guild_id: questionMsg.guild!.id,
           },
         },
       });
-    } catch (err) {}
+    } catch (err) {
+      console.error(err);
+      await int.say("There was an error sending the message");
+    }
   }
+
+  async getRandomMessages(int: Interaction, database: Database) {
+    // Seperate one for users and messages
+    // In case an invalid user is found
+    const foundUsers = new Set<string>();
+    const messageMap = new Map<string, MessageSchema>();
+    while (messageMap.size !== MAX_NUM_OPTIONS) {
+      console.log(messageMap);
+      // Custom scraper function
+      const filter: FilterQuery<MessageSchema> = {
+        user: {
+          $nin: Array.from(foundUsers),
+        },
+      };
+      const count = await database.messages.countDocuments(filter);
+      // Escape if there aren't enough people
+      if (count === 0) {
+        break;
+      }
+      const cursor: Cursor<MessageSchema> = database.messages.find(filter);
+      const randIndex = Math.floor(Math.random() * count);
+      let resultMessage: MessageSchema | null = null;
+      let i = 0;
+      for await (const doc of cursor) {
+        if (i === randIndex) {
+          resultMessage = doc;
+          break;
+        }
+        i++;
+      }
+      if (resultMessage === null) {
+        // This should really never happen, because count > 0
+        break;
+      }
+      // Sanity check
+      foundUsers.add(resultMessage.user);
+      if (int.guild.members.resolve(resultMessage.user) === null) {
+        continue;
+      }
+      messageMap.set(resultMessage.user, resultMessage);
+    }
+    const messages = Array.from(messageMap.values());
+    shuffle(messages);
+    const answer = Math.floor(Math.random() * messages.length);
+    return [messages, answer] as const;
+  }
+
   handleMessage(message: Message) {
     if (!this.inGame) return;
     if (message.author.bot) return;

@@ -71,3 +71,13 @@ export function shuffle<T>(arr: T[]) {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
 }
+
+export function chunk<T>(chunkSize: number, arr: T[]): T[][] {
+  const chunks: T[][] = [];
+  const len = arr.length;
+  const numChunks = Math.ceil(len / chunkSize);
+  for (let i = 0; i < numChunks; i++) {
+    chunks.push(arr.slice(i * chunkSize, (i + 1) * chunkSize));
+  }
+  return chunks;
+}
