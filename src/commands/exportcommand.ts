@@ -1,12 +1,12 @@
+import { Interaction } from "@thesilican/slash-commando";
+import { MessageAttachment } from "discord.js";
+import zlib from "zlib";
+import env from "../env";
+import { extractWords } from "../util";
 import {
   ScraperBotCommand,
   ScraperBotCommandOptions,
 } from "./scraperbotcommand";
-import { Interaction } from "@thesilican/slash-commando";
-import env from "../env";
-import { extractWords } from "../util";
-import { MessageAttachment } from "discord.js";
-import zlib from "zlib";
 
 export class ExportCommand extends ScraperBotCommand {
   constructor(options: ScraperBotCommandOptions) {

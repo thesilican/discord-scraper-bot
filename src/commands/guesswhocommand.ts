@@ -1,14 +1,8 @@
 import { Interaction } from "@thesilican/slash-commando";
-import { MessageEmbed, TextChannel } from "discord.js";
 import {
   ScraperBotCommand,
   ScraperBotCommandOptions,
 } from "./scraperbotcommand";
-
-const template = `
-{contents}
-- ||{author} [{date}]({link})||
-`;
 
 export class GuessWhoCommand extends ScraperBotCommand {
   constructor(options: ScraperBotCommandOptions) {

@@ -1,12 +1,12 @@
 import { CommandClient } from "@thesilican/slash-commando";
 import { ExportCommand } from "./commands/exportcommand";
 import { GuessWhoCommand } from "./commands/guesswhocommand";
+import { GuessWhoLeaderboardCommand } from "./commands/guesswholeaderboardcommand";
 import { LeaderboardCommand } from "./commands/leaderboardcommand";
 import { MyStatsCommand } from "./commands/mystatscommand";
 import { PingCommand } from "./commands/pingcommand";
 import { RandomMessageCommand } from "./commands/randommessagecommand";
 import { ScrapeCommand } from "./commands/scrapecommand";
-import { GuessWhoLeaderboardCommand } from "./commands/guesswholeaderboardcommand";
 import { TopCommand } from "./commands/topcommand";
 import { WordStatsCommand } from "./commands/wordstatscommand";
 import { Database } from "./database";
