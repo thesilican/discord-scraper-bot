@@ -139,7 +139,6 @@ export class GuessWhoManager {
     const foundUsers = new Set<string>();
     const messageMap = new Map<string, MessageSchema>();
     while (messageMap.size !== MAX_NUM_OPTIONS) {
-      console.log(messageMap);
       // Custom scraper function
       const filter: FilterQuery<MessageSchema> = {
         user: {
