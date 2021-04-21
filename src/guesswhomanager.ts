@@ -167,6 +167,9 @@ export class GuessWhoManager {
       }
       // Sanity check
       foundUsers.add(resultMessage.user);
+      try {
+        await int.guild.members.fetch(resultMessage.user);
+      } catch {}
       if (int.guild.members.resolve(resultMessage.user) === null) {
         continue;
       }
