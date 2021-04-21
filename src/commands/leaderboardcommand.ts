@@ -37,7 +37,7 @@ export class LeaderboardCommand extends ScraperBotCommand {
 
   async run(int: Interaction) {
     const word = normString(int.args[0] ?? "bruh");
-    const query = await this.database.getUsersByWord(word);
+    const query = await this.database.getMessageUserByWord(word);
 
     const usernames = new Map<string, string>();
     for (const [userID] of query) {

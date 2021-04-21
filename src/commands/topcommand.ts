@@ -60,7 +60,7 @@ export class TopCommand extends ScraperBotCommand {
 
     const channel = int.guild.channels.resolve(int.args[1]);
     const channelName = channel?.name;
-    for await (const message of this.database.getMessages()) {
+    for await (const message of this.database.getMessageCursor()) {
       if (channel?.id && message.channel !== channel.id) {
         continue;
       }

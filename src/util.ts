@@ -60,3 +60,14 @@ export async function* scrapeChannel(channel: TextChannel, limit = 100) {
     yield res;
   } while (res.size === limit);
 }
+
+export function sleep(ms?: number) {
+  return new Promise<void>((res) => setTimeout(res, ms));
+}
+
+export function shuffle<T>(arr: T[]) {
+  for (let i = arr.length - 1; i >= 1; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}

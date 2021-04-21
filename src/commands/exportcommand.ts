@@ -21,7 +21,7 @@ export class ExportCommand extends ScraperBotCommand {
       return int.say("Only the owner may use this command");
     }
     const data: any[] = [];
-    const cursor = this.database.getMessages();
+    const cursor = this.database.getMessageCursor();
     for await (const message of cursor) {
       const words: { [word: string]: number } = {};
       const wordsMap = Array.from(extractWords(message.content).entries())

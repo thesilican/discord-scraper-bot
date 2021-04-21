@@ -53,7 +53,7 @@ export class ScrapeCommand extends ScraperBotCommand {
     }
 
     if (!int.args[1]) {
-      await this.database.removeAll();
+      await this.database.deleteMessage("all");
     }
     try {
       await scrape(int, channels, this.database);
@@ -80,7 +80,7 @@ async function scrape(
     let round = 0;
     let totalChannel = 0;
     for await (const messages of scrapeChannel(channel)) {
-      await database.addMessage(messages.array());
+      await database.createMessage(messages.array());
       total += messages.size;
       totalChannel += messages.size;
       round++;

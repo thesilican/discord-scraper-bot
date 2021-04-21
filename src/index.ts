@@ -6,27 +6,30 @@ import { MyStatsCommand } from "./commands/mystatscommand";
 import { PingCommand } from "./commands/pingcommand";
 import { RandomMessageCommand } from "./commands/randommessagecommand";
 import { ScrapeCommand } from "./commands/scrapecommand";
+import { GuessWhoLeaderboardCommand } from "./commands/guesswholeaderboardcommand";
 import { TopCommand } from "./commands/topcommand";
 import { WordStatsCommand } from "./commands/wordstatscommand";
 import { Database } from "./database";
 import env from "./env";
+import { GuessWhoManager } from "./guesswhomanager";
 import { PaginationHandler } from "./pagination";
-import { handleProxyReaction, proxyMessage } from "./proxy";
 import { filterChannel } from "./util";
 
 async function main() {
-  const database = await Database.build();
-  const pagination = new PaginationHandler({ maxConcurrentPagination: 2 });
-
   const client = new CommandClient({
     owner: env.discord.owner,
     guild: env.discord.guild,
     token: env.discord.token,
     partials: ["MESSAGE", "REACTION"],
   });
+
+  const database = await Database.build();
+  const pagination = new PaginationHandler({ maxConcurrentPagination: 2 });
+  const guessWhoManager = new GuessWhoManager();
   const commandOptions = {
     database,
     pagination,
+    guessWhoManager,
   };
   client.registry.registerCommands([
     new LeaderboardCommand(commandOptions),
@@ -37,20 +40,22 @@ async function main() {
     new ScrapeCommand(commandOptions),
     new ExportCommand(commandOptions),
     new GuessWhoCommand(commandOptions),
+    new GuessWhoLeaderboardCommand(commandOptions),
     new PingCommand(),
   ]);
   await client.start();
   client.on("message", (msg) => {
-    database.addMessage(msg);
-    if (env.discord.proxyMessages === "yes") {
-      proxyMessage(msg);
-    }
+    database.createMessage(msg);
+    guessWhoManager.handleMessage(msg);
   });
   client.on("messageDelete", (msg) => {
-    database.removeMessageByID(msg.id);
+    database.deleteMessage("id", msg.id);
   });
   client.on("messageDeleteBulk", (msgs) => {
-    database.removeMessageByID(msgs.map((x) => x.id));
+    database.deleteMessage(
+      "id",
+      msgs.map((x) => x.id)
+    );
   });
   client.on("messageUpdate", async (_, msg) => {
     msg = await msg.fetch();
@@ -58,16 +63,13 @@ async function main() {
   });
   client.on("channelUpdate", async (_, channel) => {
     if (!filterChannel(channel)) {
-      database.removeMessageByChannelID(channel.id);
+      database.deleteMessage("channel", channel.id);
     }
   });
   client.on("channelDelete", (channel) => {
-    database.removeMessageByChannelID(channel.id);
+    database.deleteMessage("channel", channel.id);
   });
   client.on("messageReactionAdd", (reaction, user) => {
-    // For privacy reasons, let messages be deleted
-    // Even when proxy is off
-    handleProxyReaction(reaction, user);
     pagination.handleReaction(reaction, user);
   });
 

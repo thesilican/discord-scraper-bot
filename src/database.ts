@@ -6,6 +6,7 @@ import {
   FilterQuery,
   MongoClient,
   MongoError,
+  UpdateQuery,
 } from "mongodb";
 import env from "./env";
 import { extractWords, filterMessage } from "./util";
@@ -17,23 +18,32 @@ export type MessageSchema = {
   channel: string;
 };
 
+export type GuessWhoLeaderboardSchema = {
+  _id: string;
+  correct: number;
+  total: number;
+};
+
 export type DatabaseOptions = {
   client: MongoClient;
   db: Db;
   messages: Collection;
+  guessWhoLeaderboard: Collection;
 };
 
 export class Database {
   client: MongoClient;
   db: Db;
   messages: Collection;
+  guessWhoLeaderboard: Collection;
   constructor(options: DatabaseOptions) {
     this.client = options.client;
     this.db = options.db;
     this.messages = options.messages;
+    this.guessWhoLeaderboard = options.guessWhoLeaderboard;
   }
 
-  async addMessage(messages: Message | Message[]) {
+  async createMessage(messages: Message | Message[]) {
     if (!Array.isArray(messages)) {
       messages = [messages];
     }
@@ -71,35 +81,30 @@ export class Database {
       );
     }
   }
-  async removeMessageByID(id: string | string[]) {
-    if (!Array.isArray(id)) {
-      id = [id];
+  async deleteMessage(by: "id" | "channel" | "all", ids?: string | string[]) {
+    if (ids !== undefined && !Array.isArray(ids)) {
+      ids = [ids];
     }
-    await this.messages.deleteMany({ _id: { $in: id } });
-  }
-  async removeMessageByChannelID(channelID: string | string[]) {
-    if (!Array.isArray(channelID)) {
-      channelID = [channelID];
+    if (by === "id") {
+      await this.messages.deleteMany({ _id: { $in: ids } });
+    } else if (by === "channel") {
+      await this.messages.deleteMany({ channel: { $in: ids } });
+    } else if (by === "all") {
+      await this.messages.deleteMany({});
     }
-    await this.messages.deleteMany({ channel: { $in: channelID } });
   }
-  async removeAll() {
-    await this.messages.deleteMany({});
-  }
-
-  getMessages() {
+  getMessageCursor() {
     return this.messages.find({}) as Cursor<MessageSchema>;
   }
-  async getUserWords(userID: string): Promise<Map<string, number>> {
-    const cursor: Cursor<MessageSchema> = this.messages.find({ user: userID });
-    const words = new Map<string, number>();
-    for await (const message of cursor) {
-      for (const [word, count] of extractWords(message.content)) {
-        const newCount = (words.get(word) ?? 0) + count;
-        words.set(word, newCount);
-      }
+  async getMessageCount(userID?: string, channelID?: string) {
+    const filter: FilterQuery<MessageSchema> = {};
+    if (userID !== undefined) {
+      filter.user = userID;
     }
-    return words;
+    if (channelID !== undefined) {
+      filter.channel = channelID;
+    }
+    return await this.messages.countDocuments(filter);
   }
   async getMessageRandom(userID?: string, channelID?: string) {
     let query: FilterQuery<MessageSchema> = {};
@@ -124,9 +129,17 @@ export class Database {
     }
     return null;
   }
-  async getWords() {
+  async getMessageWords(userID?: string, channelID?: string) {
+    const filter: FilterQuery<MessageSchema> = {};
+    if (userID !== undefined) {
+      filter.user = userID;
+    }
+    if (channelID !== undefined) {
+      filter.channel = channelID;
+    }
+
     const cursor: Cursor<MessageSchema> = this.messages
-      .find({})
+      .find(filter)
       .project({ content: 1 });
     const words = new Map<string, number>();
     for await (const message of cursor) {
@@ -137,30 +150,14 @@ export class Database {
     }
     return words;
   }
-  async getWordsByChannel(channelID: string) {
-    const cursor: Cursor<MessageSchema> = this.messages
-      .find({
-        channel: channelID,
-      })
-      .project({ content: 1 });
-    const words = new Map<string, number>();
-    for await (const message of cursor) {
-      for (const [word, count] of extractWords(message.content)) {
-        const newCount = (words.get(word) ?? 0) + count;
-        words.set(word, newCount);
-      }
-    }
-    return words;
-  }
-  async getUsersByWord(word: string) {
+  async getMessageUserByWord(word: string) {
     const users = new Map<string, number>();
     const cursor: Cursor<MessageSchema> = this.messages
       .find({})
       .project({ user: 1, content: 1 });
     for await (const message of cursor) {
       const user = message.user;
-      const words = extractWords(message.content);
-      const count = words.get(word)!;
+      const count = extractWords(message.content).get(word);
       if (count) {
         const newCount = (users.get(user) ?? 0) + count;
         users.set(user, newCount);
@@ -168,14 +165,37 @@ export class Database {
     }
     return users;
   }
-  async getMessageCount() {
-    return await this.messages.countDocuments({});
+
+  async updateGuessWhoLeaderboard(
+    userID: string,
+    correct: number,
+    total: number
+  ) {
+    const query: FilterQuery<GuessWhoLeaderboardSchema> = {
+      _id: userID,
+    };
+    const update: UpdateQuery<GuessWhoLeaderboardSchema> = {
+      $set: {
+        correct,
+        total,
+      },
+    };
+    const options = {
+      upsert: true,
+    };
+    await this.guessWhoLeaderboard.updateOne(query, update, options);
   }
-  async getMessageCountByChannel(channelID: string) {
-    return await this.messages.countDocuments({ channel: channelID });
+  getGuessWhoLeaderboardCursor() {
+    return this.guessWhoLeaderboard.find(
+      {}
+    ) as Cursor<GuessWhoLeaderboardSchema>;
   }
-  async getMessageCountByUser(userID: string): Promise<number> {
-    return await this.messages.countDocuments({ user: userID });
+  async getGuessWhoLeaderboard(userID: string) {
+    const query: FilterQuery<GuessWhoLeaderboardSchema> = {
+      _id: userID,
+    };
+    const res = await this.guessWhoLeaderboard.findOne(query);
+    return res as GuessWhoLeaderboardSchema | null;
   }
 
   async close() {
@@ -185,7 +205,10 @@ export class Database {
 
   static async build() {
     const URI = `mongodb://${env.mongodb.host}`;
-    const client = new MongoClient(URI, { useUnifiedTopology: true });
+    const client = new MongoClient(URI, {
+      useUnifiedTopology: true,
+      useNewUrlParser: true,
+    });
     await client.connect();
     console.log("Connected to MongoDB");
 
@@ -193,7 +216,8 @@ export class Database {
     const messages = db.collection("messages");
     await messages.createIndex({ user: 1 });
     await messages.createIndex({ channel: 1 });
+    const guessWhoLeaderboard = db.collection("guessWhoLeaderboard");
 
-    return new Database({ client, db, messages });
+    return new Database({ client, db, messages, guessWhoLeaderboard });
   }
 }

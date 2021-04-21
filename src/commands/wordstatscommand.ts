@@ -63,10 +63,13 @@ export class WordStatsCommand extends ScraperBotCommand {
         return int.say("Channel " + channel.name + " is not a text channel");
       }
       channelName = channel.name;
-      query = await this.database.getWordsByChannel(int.args[1]);
-      totalMessages = await this.database.getMessageCountByChannel(int.args[1]);
+      query = await this.database.getMessageWords(undefined, int.args[1]);
+      totalMessages = await this.database.getMessageCount(
+        undefined,
+        int.args[1]
+      );
     } else {
-      query = await this.database.getWords();
+      query = await this.database.getMessageWords();
       totalMessages = await this.database.getMessageCount();
     }
     const data = Array.from(query.entries()).map(

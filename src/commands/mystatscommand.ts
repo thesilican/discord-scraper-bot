@@ -64,10 +64,8 @@ export class MyStatsCommand extends ScraperBotCommand {
       discordUser = int.member.user;
     }
 
-    const user = await this.database.getUserWords(discordUser.id);
-    const totalMessages = await this.database.getMessageCountByUser(
-      discordUser.id
-    );
+    const user = await this.database.getMessageWords(discordUser.id);
+    const totalMessages = await this.database.getMessageCount(discordUser.id);
     if (totalMessages === 0) {
       if (discordUser.bot) {
         return int.say(`Stats are not tracked for bots`);
