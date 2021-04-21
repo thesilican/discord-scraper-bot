@@ -24,6 +24,6 @@ export class PingCommand extends Command {
   async run(int: Interaction) {
     const index = Math.floor(Math.random() * replies.length);
     const msgText = replies[index].replace("{user}", int.member.user.username);
-    int.say(msgText);
+    return int.say(msgText);
   }
 }
