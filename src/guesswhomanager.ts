@@ -54,7 +54,7 @@ export class GuessWhoManager {
     if (correctChannel === null || !(correctChannel instanceof TextChannel)) {
       return await int.say("There was a problem: Error resolving channel");
     }
-    await correctChannel.messages.fetch({ around: correctDoc._id });
+    await correctChannel.messages.fetch({ around: correctDoc._id, limit: 5 });
     const correctMessage = correctChannel.messages.resolve(correctDoc._id);
     if (correctMessage === null) {
       return await int.say("There was a problem: Error resolving message");
