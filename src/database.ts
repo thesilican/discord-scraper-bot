@@ -22,6 +22,8 @@ export type GuessWhoLeaderboardSchema = {
   _id: string;
   correct: number;
   total: number;
+  streak: number;
+  maxStreak: number;
 };
 
 export type DatabaseOptions = {
@@ -166,18 +168,16 @@ export class Database {
     return users;
   }
 
-  async updateGuessWhoLeaderboard(
-    userID: string,
-    correct: number,
-    total: number
-  ) {
+  async updateGuessWhoLeaderboard(info: GuessWhoLeaderboardSchema) {
     const query: FilterQuery<GuessWhoLeaderboardSchema> = {
-      _id: userID,
+      _id: info._id,
     };
     const update: UpdateQuery<GuessWhoLeaderboardSchema> = {
       $set: {
-        correct,
-        total,
+        correct: info.correct,
+        total: info.total,
+        streak: info.streak,
+        maxStreak: info.maxStreak,
       },
     };
     const options = {

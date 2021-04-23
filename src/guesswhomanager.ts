@@ -23,7 +23,8 @@ const answerEmbedTemplate = `
 {score}
 `;
 
-const MAX_NUM_OPTIONS = 6;
+const MAX_NUM_OPTIONS = 4;
+const MIN_MESSAGE_LEN = 15;
 
 export class GuessWhoManager {
   inGame: boolean;
@@ -50,6 +51,9 @@ export class GuessWhoManager {
 
     // Fetch info for correct message
     const correctDoc = messages[answer];
+    if (!correctDoc) {
+      return await int.say("There was a problem: Error reading answer doc");
+    }
     const correctChannel = int.guild.channels.resolve(correctDoc.channel);
     if (correctChannel === null || !(correctChannel instanceof TextChannel)) {
       return await int.say("There was a problem: Error resolving channel");
@@ -96,13 +100,24 @@ export class GuessWhoManager {
     const scoreTextArr = [];
     for (const [id, guess] of this.guesses) {
       const name = getUsername(id);
-      const res = await database.getGuessWhoLeaderboard(id);
       const isCorrect = guess === answer + 1;
+
+      const res = await database.getGuessWhoLeaderboard(id);
+      const newCorrect = (res?.correct ?? 0) + (isCorrect ? 1 : 0);
+      const newTotal = (res?.total ?? 0) + 1;
+      const newStreak = isCorrect ? (res?.streak ?? 0) + 1 : 0;
+      const newMaxStreak = Math.max(res?.maxStreak ?? 0, newStreak);
+
       const emoji = isCorrect ? "✅" : "❌";
-      const correctCount = (res?.correct ?? 0) + (isCorrect ? 1 : 0);
-      const totalCount = (res?.total ?? 0) + 1;
-      scoreTextArr.push(`- ${name} ${emoji} (${correctCount}/${totalCount})`);
-      await database.updateGuessWhoLeaderboard(id, correctCount, totalCount);
+      const streak = newStreak === 0 ? "" : `(${newStreak} streak)`;
+      scoreTextArr.push(`- ${name} ${emoji} ${streak}`);
+      await database.updateGuessWhoLeaderboard({
+        _id: id,
+        correct: newCorrect,
+        total: newTotal,
+        streak: newStreak,
+        maxStreak: newMaxStreak,
+      });
     }
     this.guesses.clear();
 
@@ -143,6 +158,10 @@ export class GuessWhoManager {
       const filter: FilterQuery<MessageSchema> = {
         user: {
           $nin: Array.from(foundUsers),
+        },
+        content: {
+          // Any string at least MIN_MESSAGE_LEN length
+          $regex: `^[\\s\\S]{${MIN_MESSAGE_LEN},}$`,
         },
       };
       const count = await database.messages.countDocuments(filter);

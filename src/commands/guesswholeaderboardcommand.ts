@@ -9,14 +9,20 @@ import {
 const TOTAL_CORRECT = "total-correct";
 const TOTAL_ATTEMPTS = "total-attempts";
 const PROPORTIONAL = "proportional";
+const BEST_STREAK = "streak-best";
+const CURRENT_STREAK = "streak-current";
 
 const template = `
-**❓ | Guess Who leaderboard**
+**❓ | Guess Who Leaderboard**
+Order: \`{sort-order}\`
 -----------------------------------------------
 \`\`\`markdown
-RANK  NAME            CORR% CORR/TOTAL 
+RANK  NAME             CURR/LONG CORR/TOTAL CORR%
 {table}
 
+CURR/LONG - Current/Longest Streak
+CORR/TOTAL - Correct/Total Attempts
+CORR% - % Correct Attempts
 Page {p} of {t}
 \`\`\`
 `;
@@ -30,10 +36,12 @@ export class GuessWhoLeaderboardCommand extends ScraperBotCommand {
         {
           name: "sort-by",
           description:
-            "The order you would like to sort the leaderboard. Default is sort by percentage",
+            "The order you would like to sort the leaderboard. Default is sort by longest streak",
           type: "string",
           required: false,
           choices: [
+            { name: "Longest Streak", value: BEST_STREAK },
+            { name: "Current Streak", value: CURRENT_STREAK },
             { name: "Percentage", value: PROPORTIONAL },
             { name: "Total Correct", value: TOTAL_CORRECT },
             { name: "Total Attempts", value: TOTAL_ATTEMPTS },
@@ -54,61 +62,40 @@ export class GuessWhoLeaderboardCommand extends ScraperBotCommand {
       } catch {}
     }
 
-    if (int.args[0] === undefined || int.args[0] === PROPORTIONAL) {
+    // By default, sort by total attempts
+    let sortOrderText = "undefined";
+    users.sort((a, b) => b.total - a.total);
+    if (int.args[0] === undefined || int.args[0] === BEST_STREAK) {
+      sortOrderText = "Longest Streak";
+      users.sort((a, b) => b.maxStreak - a.maxStreak);
+    } else if (int.args[0] === CURRENT_STREAK) {
+      sortOrderText = "Current Streak";
+      users.sort((a, b) => b.streak - a.streak);
+    } else if (int.args[0] === PROPORTIONAL) {
+      sortOrderText = "% Correct";
       users.sort((a, b) => b.correct / b.total - a.correct / a.total);
     } else if (int.args[0] === TOTAL_CORRECT) {
+      sortOrderText = "Total Correct";
       users.sort((a, b) => b.correct - a.correct);
     } else if (int.args[0] === TOTAL_ATTEMPTS) {
-      users.sort((a, b) => b.total - a.total);
+      sortOrderText = "Total Attempts";
     }
 
     const header: TableHeader[] = [
-      {
-        type: "ranking",
-        width: 4,
-        column:
-          int.args[0] === undefined || int.args[0] === PROPORTIONAL
-            ? 4
-            : undefined,
-      },
-      {
-        type: "literal",
-        content: ". ",
-      },
-      {
-        type: "string",
-        width: 15,
-      },
-      {
-        type: "literal",
-        content: "- ",
-      },
-      {
-        type: "number",
-        width: 3,
-        fixed: 0,
-        align: "right",
-      },
-      {
-        type: "literal",
-        content: "%",
-      },
-      {
-        type: "number",
-        width: 4,
-        fixed: 0,
-        align: "right",
-      },
-      {
-        type: "literal",
-        content: " / ",
-      },
-      {
-        type: "number",
-        width: 4,
-        fixed: 0,
-        align: "left",
-      },
+      { type: "ranking", width: 4 },
+      { type: "literal", content: ". " },
+      { type: "string", width: 15 },
+      { type: "literal", content: "- " },
+      { type: "number", width: 3, fixed: 0, align: "right" },
+      { type: "literal", content: " / " },
+      { type: "number", width: 3, fixed: 0, align: "left" },
+      { type: "literal", content: " " },
+      { type: "number", width: 3, fixed: 0, align: "right" },
+      { type: "literal", content: " / " },
+      { type: "number", width: 3, fixed: 0, align: "left" },
+      { type: "literal", content: "   " },
+      { type: "number", width: 3, fixed: 0, align: "right" },
+      { type: "literal", content: "%" },
     ];
     const data = users.map((x) => {
       const username = int.guild.members.resolve(x._id)?.displayName;
@@ -118,11 +105,15 @@ export class GuessWhoLeaderboardCommand extends ScraperBotCommand {
         null,
         `${username}`,
         null,
-        percentage,
+        x.streak,
+        null,
+        x.maxStreak,
         null,
         x.correct,
         null,
         x.total,
+        null,
+        percentage,
       ];
     });
     const pages = createTable({
@@ -132,6 +123,7 @@ export class GuessWhoLeaderboardCommand extends ScraperBotCommand {
     }).map((t, i, arr) =>
       template
         .replace("{table}", t)
+        .replace("{sort-order}", sortOrderText)
         .replace("{p}", (i + 1).toString())
         .replace("{t}", arr.length.toString())
     );
