@@ -14,8 +14,8 @@ const CURRENT_STREAK = "streak-current";
 
 const template = `
 **❓ | Guess Who Leaderboard**
-Order: \`{sort-order}\`
 -----------------------------------------------
+Order: \`{sort-order}\`
 \`\`\`markdown
 RANK  NAME             CURR/LONG CORR/TOTAL CORR%
 {table}
@@ -67,9 +67,11 @@ export class GuessWhoLeaderboardCommand extends ScraperBotCommand {
     users.sort((a, b) => b.total - a.total);
     if (int.args[0] === undefined || int.args[0] === BEST_STREAK) {
       sortOrderText = "Longest Streak";
+      users.sort((a, b) => b.correct / b.total - a.correct / a.total);
       users.sort((a, b) => b.maxStreak - a.maxStreak);
     } else if (int.args[0] === CURRENT_STREAK) {
       sortOrderText = "Current Streak";
+      users.sort((a, b) => b.correct / b.total - a.correct / a.total);
       users.sort((a, b) => b.streak - a.streak);
     } else if (int.args[0] === PROPORTIONAL) {
       sortOrderText = "% Correct";
