@@ -43,6 +43,8 @@ export class GuessWhoManager {
     }
     this.inGame = true;
     this.guesses.clear();
+    // Set a guess, to prevent cheesing
+    this.guesses.set(int.member.id, -1);
 
     // Get a message
     const getUsername = (id: string) =>
