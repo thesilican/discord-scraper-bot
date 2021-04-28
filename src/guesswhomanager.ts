@@ -85,10 +85,10 @@ export class GuessWhoManager {
       .setFooter(guessEmbedFooterTemplate);
     const questionText = guessTextTemplate.replace(
       "{options}",
-      chunk(3, messages)
+      chunk(4, messages)
         .map((chunk, i) =>
           chunk
-            .map((x, j) => `${i * 3 + j + 1}. \`${getUsername(x.user)}\``)
+            .map((x, j) => `${i * 4 + j + 1}. \`${getUsername(x.user)}\``)
             .join(" ")
         )
         .join("\n")
