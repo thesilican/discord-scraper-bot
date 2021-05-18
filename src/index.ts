@@ -1,4 +1,5 @@
 import { CommandClient } from "@thesilican/slash-commando";
+import { CountdownCommand } from "./commands/countdowncommand";
 import { ExportCommand } from "./commands/exportcommand";
 import { GuessWhoCommand } from "./commands/guesswhocommand";
 import { GuessWhoLeaderboardCommand } from "./commands/guesswholeaderboardcommand";
@@ -42,6 +43,7 @@ async function main() {
     new GuessWhoCommand(commandOptions),
     new GuessWhoLeaderboardCommand(commandOptions),
     new PingCommand(),
+    new CountdownCommand(),
   ]);
   await client.start();
   client.on("message", (msg) => {
