@@ -54,15 +54,18 @@ export class GuessWhoManager {
     // Fetch info for correct message
     const correctDoc = messages[answer];
     if (!correctDoc) {
+      this.inGame = false;
       return await int.say("There was a problem: Error reading answer doc");
     }
     const correctChannel = int.guild.channels.resolve(correctDoc.channel);
     if (correctChannel === null || !(correctChannel instanceof TextChannel)) {
+      this.inGame = false;
       return await int.say("There was a problem: Error resolving channel");
     }
     await correctChannel.messages.fetch({ around: correctDoc._id, limit: 5 });
     const correctMessage = correctChannel.messages.resolve(correctDoc._id);
     if (correctMessage === null) {
+      this.inGame = false;
       return await int.say("There was a problem: Error resolving message");
     }
     const correctName = correctMessage.member!.displayName;
